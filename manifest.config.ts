@@ -1,0 +1,43 @@
+import { defineManifest } from '@crxjs/vite-plugin';
+import pkg from './package.json';
+
+export default defineManifest({
+  manifest_version: 3,
+  name: 'Skipper AI — YouTube Sponsor Skip',
+  version: pkg.version,
+  description:
+    'Automatically detects and skips sponsored segments in YouTube videos using Gemini AI. No community database required.',
+  icons: {
+    16: 'public/icons/icon-16.png',
+    32: 'public/icons/icon-32.png',
+    48: 'public/icons/icon-48.png',
+    128: 'public/icons/icon-128.png',
+  },
+  action: {
+    default_popup: 'src/popup/index.html',
+    default_title: 'Skipper',
+    default_icon: {
+      16: 'public/icons/icon-16.png',
+      32: 'public/icons/icon-32.png',
+      48: 'public/icons/icon-48.png',
+      128: 'public/icons/icon-128.png',
+    },
+  },
+  background: {
+    service_worker: 'src/background/index.ts',
+    type: 'module',
+  },
+  content_scripts: [
+    {
+      matches: ['https://www.youtube.com/*'],
+      js: ['src/content/index.tsx'],
+      run_at: 'document_idle',
+      all_frames: false,
+    },
+  ],
+  permissions: ['storage', 'tabs'],
+  host_permissions: [
+    'https://www.youtube.com/*',
+    'https://*.supabase.co/*',
+  ],
+});
