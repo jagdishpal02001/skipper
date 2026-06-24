@@ -6,7 +6,7 @@ export default defineManifest({
   name: 'Skipper AI — YouTube Sponsor Skip',
   version: pkg.version,
   description:
-    'Automatically detects and skips sponsored segments in YouTube videos using Gemini AI. No community database required.',
+    "Auto-skips sponsor, self-promo, intro & outro segments on YouTube via the SponsorBlock database & YouTube's built-in Gemini.",
   icons: {
     16: 'public/icons/icon-16.png',
     32: 'public/icons/icon-32.png',
@@ -35,9 +35,10 @@ export default defineManifest({
       all_frames: false,
     },
   ],
-  permissions: ['storage', 'tabs'],
+  permissions: ['storage'],
   host_permissions: [
     'https://www.youtube.com/*',
     'https://*.supabase.co/*',
+    'https://sponsor.ajay.app/*',
   ],
 });

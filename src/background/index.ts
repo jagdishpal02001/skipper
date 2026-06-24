@@ -4,7 +4,8 @@ import type {
 } from '@/types';
 import { createLogger } from '@/utils/logger';
 import { segmentCache, settingsRepository, errorLogRepository } from '@/storage';
-import { supabaseLookup, supabaseStore, supabaseLogEvent } from '@/services/supabase';
+import { supabaseLookup, supabaseStore } from '@/services/supabase';
+import { sponsorBlockLookup } from '@/services/sponsorblock';
 
 const log = createLogger('background');
 
@@ -94,13 +95,9 @@ async function handle(
       return { ok: true };
     }
 
-    case 'SUPABASE_LOG_EVENT': {
-      await supabaseLogEvent(
-        message.eventType,
-        message.videoId,
-        message.extraData,
-      );
-      return { ok: true };
+    case 'SPONSORBLOCK_LOOKUP': {
+      const segments = await sponsorBlockLookup(message.videoId);
+      return { ok: true, segments };
     }
 
     default: {

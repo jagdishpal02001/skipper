@@ -45,7 +45,7 @@ export type BackgroundRequest =
   | { type: 'CLEAR_ERROR_LOGS' }
   | { type: 'SUPABASE_LOOKUP'; videoId: string; duration: number }
   | { type: 'SUPABASE_STORE'; videoId: string; duration: number; segments: SponsorSegment[]; provider?: string }
-  | { type: 'SUPABASE_LOG_EVENT'; eventType: string; videoId: string; extraData?: Record<string, any> };
+  | { type: 'SPONSORBLOCK_LOOKUP'; videoId: string };
 
 export interface CacheInfo {
   entries: number;
@@ -67,7 +67,7 @@ export type BackgroundResponseMap = {
   CLEAR_ERROR_LOGS: { ok: true };
   SUPABASE_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
   SUPABASE_STORE: { ok: true };
-  SUPABASE_LOG_EVENT: { ok: true };
+  SPONSORBLOCK_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
 };
 
 export type BackgroundResponse<T extends BackgroundRequest['type']> =

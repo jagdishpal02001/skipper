@@ -42,7 +42,7 @@ export function Popup() {
         <p className="font-semibold text-gray-300 mb-0.5 flex items-center gap-1">
           <span>💡</span> AI Advisory
         </p>
-        Skipper is free and AI-based; timestamps may occasionally be inaccurate. Note: You must be logged into YouTube with a Google account, as Skipper drives YouTube's built-in Gemini feature to resolve segments.
+        Skipper is free and AI-based; timestamps may occasionally be inaccurate. Note: You must be logged into YouTube with a Google account, as Skipper drives YouTube&apos;s built-in Gemini feature to resolve segments.
       </div>
 
       <footer className="pt-1 text-center text-[10px] text-gray-600">

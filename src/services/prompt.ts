@@ -40,6 +40,9 @@ Rules:
 - Do not include the intro unless it is itself promotional.
 - "end" must be greater than "start"; segments must not overlap.
 - If there is no promotional content, return {"segments": []}.
+- **Whole-Video Advertisements**: If the entire video (or more than 90% of it) is a paid review, standalone ad, product demonstration, or promotional showcase, return a single segment starting at 0 and ending at the total duration of the video.
+- **Teasers & Repeated Plugs**: If the creator briefly teases a sponsor at the start and then does a detailed segment later, return them as separate segments.
+- **Keywords**: Pay close attention to transition signals like "sponsored by", "brought to you by", "use code", "discount link", "check out my partner", and names of common sponsors.
 - Output valid JSON only.`;
 
 /**

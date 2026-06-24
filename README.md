@@ -1,15 +1,16 @@
 # Skipper — AI Sponsor Skip for YouTube
 
-Skipper automatically detects and skips sponsored segments in YouTube videos using **Gemini AI**. Unlike community-database tools (e.g. SponsorBlock), Skipper analyzes each video **on demand**, so it works on any video — including ones uploaded minutes ago.
+Skipper automatically detects and skips sponsored segments in YouTube videos. It combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
 
-> Open a video → Skipper checks the local cache & Supabase public database → Falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
+> Open a video → Skipper checks the local cache & Supabase public database → SponsorBlock community database → Falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
 
 ---
 
 ## Features
 
-- 🆓 **Free, no API key** — Uses YouTube's built-in **"Ask about this video"** Gemini feature to get sponsor timestamps directly (for logged-in accounts that have the feature).
-- 🤖 **On-demand AI analysis** — No manual community submissions required.
+- 🆓 **Free, no API key** — Uses the public **SponsorBlock** database plus YouTube's built-in **"Ask about this video"** Gemini feature (for logged-in accounts that have it) to get sponsor timestamps directly.
+- 🌍 **Reliable out of the box** — SponsorBlock covers millions of videos and works without any Google sign-in, so skipping works immediately.
+- 🤖 **On-demand AI analysis** — Gemini fills the gaps for videos not yet in the community database — no manual submissions required.
 - 🎬 **Works on any video** — Transcript, captions, chapters, description, or comments are used as the analysis source.
 - ⏭️ **Automatic skipping** — Jumps past sponsors, self-promos, intros, and outros.
 - 🔔 **Skip alerts** — Non-intrusive notifications each time a segment is skipped.
@@ -69,9 +70,11 @@ YouTube video loaded
    │
    ├── 1. Local Cache check ◀─┐
    │                          │
-   ├── 2. Supabase DB check ◀─┼── (via background message worker)
+   ├── 2. Supabase DB check ◀─┤
+   │                          ├── (via background message worker)
+   ├── 3. SponsorBlock DB ◀───┤
    │                          │
-   ├── 3. AskGeminiProvider ──┼── AskGeminiApi (same-origin InnerTube API call)
+   ├── 4. AskGeminiProvider ──┼── AskGeminiApi (same-origin InnerTube API call)
    │                          └── AskGeminiPanel (DOM interaction fallback driver)
    │
    ▼ (segments handed to the skip engine)
@@ -109,7 +112,7 @@ src/
 
 ## Key Architecture Patterns
 
-- **Cascading Providers.** The extension utilizes a fallback cascade. It checks the local cache first, then queries the public database (Supabase). If both miss, it analyzes the video via the `AskGeminiProvider` using YouTube's built-in Gemini feature and stores the result back to both caches.
+- **Cascading Providers.** The extension utilizes a fallback cascade. It checks the local cache first, then queries the public databases (Supabase, then SponsorBlock). If all miss, it analyzes the video via the `AskGeminiProvider` using YouTube's built-in Gemini feature and stores the result back to the caches.
 - **Repository Pattern.** Storage wrappers (`SegmentCacheRepository`, `SettingsRepository`) decouple the application logic from the raw Chrome storage APIs, keeping code mockable and clean.
 - **Shadow DOM Isolation.** In-player toast overlays are mounted in an isolated Shadow DOM so YouTube's styles cannot interfere with the extension's rendering.
 - **Efficient Event Loops.** Skipping reads the native HTML5 `<video>` element directly. We query `currentTime` in a lightweight periodic loop, auto-cleaning resources on navigation or tab unload.
@@ -133,7 +136,9 @@ src/
 ## Privacy
 
 - Video transcripts and metadata are parsed same-origin and analyzed through YouTube's built-in Gemini feature. No developer API keys are used or stored.
-- Successful analysis results (sponsor start and end timestamps) are stored in a shared public Supabase database so all Skipper users can benefit from them. No user-identifying telemetry or watch history is ever stored or transmitted.
+- SponsorBlock lookups use the privacy-preserving hash-prefix endpoint: only the first four characters of a video ID's SHA-256 hash are sent.
+- The shared Supabase cache is keyed by the **full SHA-256 hash** of the video ID, so the raw ID of the video you are watching is never transmitted.
+- Successful analysis results (sponsor start and end timestamps) are stored in the shared public Supabase database so all Skipper users can benefit from them. No persistent identifier, account info, or watch history is collected, and no usage telemetry is sent.
 
 ---
 
@@ -146,6 +151,12 @@ src/
 | `npm run lint` | ESLint static analysis |
 | `npm run format` | Prettier code formatter |
 | `npm run icons` | Programmatically generate PNG extension icons |
+
+---
+
+## Credits
+
+Sponsor segment data is provided by the **[SponsorBlock](https://sponsor.ajay.app/)** project and its community of contributors, used under the [SponsorBlock database license](https://github.com/ajayyy/SponsorBlock/wiki/Database-and-API-License) (CC BY-NC-SA 4.0).
 
 ---
 
