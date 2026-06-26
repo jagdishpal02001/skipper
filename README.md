@@ -1,5 +1,11 @@
 # Skipper — AI Sponsor Skip for YouTube
 
+🔗 **[Official Website](https://skipperai.netlify.app/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
+
+[![Website](https://img.shields.io/badge/Website-skipperai.netlify.app-success)](https://skipperai.netlify.app/)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.0.2-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
+
+
 Skipper automatically detects and skips sponsored segments in YouTube videos. It combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
 
 > Open a video → Skipper checks the local cache & Supabase public database → SponsorBlock community database → Falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
@@ -25,7 +31,15 @@ Manifest V3 · TypeScript (strict) · React 18 · Vite · TailwindCSS · Chrome 
 
 ---
 
-## Installation & Build
+## Installation
+
+### 1. Install from Chrome Web Store (Recommended)
+
+You can install Skipper AI directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**.
+
+### 2. Manual Installation & Build (For Developers)
+
+To build the extension from source:
 
 ```bash
 # 1. Install dependencies
