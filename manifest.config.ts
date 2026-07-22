@@ -6,7 +6,7 @@ export default defineManifest({
   name: 'Skipper AI — YouTube Sponsor Skip',
   version: pkg.version,
   description:
-    "Auto-skips sponsor, self-promo, intro & outro segments on YouTube via the SponsorBlock database & YouTube's built-in Gemini.",
+    'Skip YouTube sponsors, see AI audience ratings from the comments, and track your watch time — private, no API key needed.',
   icons: {
     16: 'public/icons/icon-16.png',
     32: 'public/icons/icon-32.png',

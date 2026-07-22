@@ -1,4 +1,4 @@
-import type { SponsorSegment } from '@/types';
+import type { SponsorSegment, VideoSentiment } from '@/types';
 import { createLogger } from '@/utils/logger';
 import { sha256Hex } from '@/utils/hash';
 
@@ -9,8 +9,13 @@ const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL as string) || '';
 const SUPABASE_ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string) || '';
 
 const TABLE = 'segments';
+const SENTIMENT_TABLE = 'sentiment';
 const cleanUrl = SUPABASE_URL.replace(/\/$/, '');
 const REST_URL = `${cleanUrl}/rest/v1/${TABLE}`;
+const SENTIMENT_REST_URL = `${cleanUrl}/rest/v1/${SENTIMENT_TABLE}`;
+
+/** Shared verdicts older than this are ignored — comments drift over time. */
+const SENTIMENT_MAX_AGE_DAYS = 14;
 
 const headers = (): Record<string, string> => ({
   apikey: SUPABASE_ANON_KEY,
@@ -105,6 +110,108 @@ export async function supabaseStore(
     return true;
   } catch (error) {
     log.warn('store failed (network)', error);
+    return false;
+  }
+}
+
+// ---- sentiment (shared audience verdicts) -------------------------------
+
+interface SupabaseSentimentRow {
+  /** SHA-256 hash of the YouTube video ID (the raw ID is never transmitted). */
+  video_id: string;
+  rating: number;
+  positive_pct: number;
+  negative_pct: number;
+  neutral_pct: number;
+  summary: string;
+  sample_size: number;
+  created_at: string;
+}
+
+/**
+ * Look up a shared sentiment verdict for a video. Rows older than
+ * {@link SENTIMENT_MAX_AGE_DAYS} are treated as stale and ignored so a video
+ * whose reception shifted gets re-analyzed. Same privacy model as segments:
+ * only the SHA-256 hash of the video ID leaves the device.
+ * Fails silently — a network error just means "miss".
+ */
+export async function supabaseSentimentLookup(
+  videoId: string,
+): Promise<VideoSentiment | null> {
+  try {
+    const videoHash = await sha256Hex(videoId);
+    const cutoff = new Date(
+      Date.now() - SENTIMENT_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+    ).toISOString();
+    const url =
+      `${SENTIMENT_REST_URL}?video_id=eq.${videoHash}` +
+      `&created_at=gte.${encodeURIComponent(cutoff)}&select=*`;
+    const res = await fetch(url, { headers: headers() });
+    if (!res.ok) {
+      log.warn(`sentiment lookup HTTP ${res.status}`);
+      return null;
+    }
+
+    const rows = (await res.json()) as SupabaseSentimentRow[];
+    const row = rows[0];
+    if (!row) {
+      log.debug('sentiment miss', videoId);
+      return null;
+    }
+
+    log.info('sentiment hit', videoId);
+    return {
+      videoId,
+      rating: row.rating,
+      positivePct: row.positive_pct,
+      negativePct: row.negative_pct,
+      neutralPct: row.neutral_pct,
+      summary: row.summary,
+      sampleSize: row.sample_size,
+      createdAt: new Date(row.created_at).getTime(),
+    };
+  } catch (error) {
+    log.warn('sentiment lookup failed (network)', error);
+    return null;
+  }
+}
+
+/**
+ * Share (upsert) a sentiment verdict so other users get it without asking
+ * Gemini. Fails silently — sharing must never break the user flow.
+ */
+export async function supabaseSentimentStore(
+  sentiment: VideoSentiment,
+): Promise<boolean> {
+  try {
+    const body = {
+      video_id: await sha256Hex(sentiment.videoId),
+      rating: sentiment.rating,
+      positive_pct: sentiment.positivePct,
+      negative_pct: sentiment.negativePct,
+      neutral_pct: sentiment.neutralPct,
+      summary: sentiment.summary,
+      sample_size: sentiment.sampleSize,
+      created_at: new Date(sentiment.createdAt).toISOString(),
+    };
+
+    const res = await fetch(`${SENTIMENT_REST_URL}?on_conflict=video_id`, {
+      method: 'POST',
+      headers: {
+        ...headers(),
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      log.warn(`sentiment store HTTP ${res.status}`, await res.text());
+      return false;
+    }
+    log.info('sentiment stored', sentiment.videoId);
+    return true;
+  } catch (error) {
+    log.warn('sentiment store failed (network)', error);
     return false;
   }
 }

@@ -3,6 +3,8 @@ import { useActiveVideo, useCacheInfo, useSettings } from '@/hooks';
 import { VideoStatus } from './VideoStatus';
 import { SettingsPanel } from './SettingsPanel';
 import { SystemPanel } from './SystemPanel';
+import { UsagePanel } from './UsagePanel';
+import { SentimentPanel } from './SentimentPanel';
 
 /**
  * Root popup view. Composes the status, settings and cache sections and owns
@@ -35,6 +37,8 @@ export function Popup() {
       </header>
 
       <VideoStatus video={video} enabled={settings.enabled} />
+      <SentimentPanel video={video} />
+      <UsagePanel />
       <SettingsPanel settings={settings} onUpdate={(p) => void update(p)} />
       <SystemPanel cache={cache} />
 

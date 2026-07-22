@@ -3,8 +3,19 @@ import type {
   BackgroundResponseMap,
 } from '@/types';
 import { createLogger } from '@/utils/logger';
-import { segmentCache, settingsRepository, errorLogRepository } from '@/storage';
-import { supabaseLookup, supabaseStore } from '@/services/supabase';
+import {
+  segmentCache,
+  settingsRepository,
+  errorLogRepository,
+  usageStats,
+  sentimentCache,
+} from '@/storage';
+import {
+  supabaseLookup,
+  supabaseStore,
+  supabaseSentimentLookup,
+  supabaseSentimentStore,
+} from '@/services/supabase';
 import { sponsorBlockLookup } from '@/services/sponsorblock';
 
 const log = createLogger('background');
@@ -100,6 +111,38 @@ async function handle(
       return { ok: true, segments };
     }
 
+    case 'RECORD_USAGE': {
+      await usageStats.addDelta(message.delta);
+      return { ok: true };
+    }
+
+    case 'GET_USAGE_STATS': {
+      const summary = await usageStats.summary(message.days ?? 0);
+      return { ok: true, summary };
+    }
+
+    case 'CLEAR_USAGE_STATS': {
+      await usageStats.clear();
+      return { ok: true };
+    }
+
+    case 'SENTIMENT_LOOKUP': {
+      // Local cache first (free), then the shared DB; DB hits are cached
+      // locally so the next visit to this video skips the network entirely.
+      const local = await sentimentCache.get(message.videoId);
+      if (local) return { ok: true, sentiment: local };
+      const shared = await supabaseSentimentLookup(message.videoId);
+      if (shared) await sentimentCache.set(shared);
+      return { ok: true, sentiment: shared };
+    }
+
+    case 'SENTIMENT_STORE': {
+      await sentimentCache.set(message.sentiment);
+      // Share in the background — never block the user flow on the network.
+      void supabaseSentimentStore(message.sentiment);
+      return { ok: true };
+    }
+
     default: {
       const _never: never = message;
       throw new Error(`Unknown message: ${JSON.stringify(_never)}`);
@@ -111,12 +154,16 @@ function errorMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 
-// Housekeeping: prune expired cache entries on startup/install.
+// Housekeeping: prune expired cache entries + old usage buckets on start/install.
 chrome.runtime.onInstalled.addListener(() => {
   void segmentCache.pruneExpired().then((n) => n && log.info(`pruned ${n} expired`));
+  void usageStats.pruneOld();
+  void sentimentCache.pruneExpired();
 });
 chrome.runtime.onStartup.addListener(() => {
   void segmentCache.pruneExpired();
+  void usageStats.pruneOld();
+  void sentimentCache.pruneExpired();
 });
 
 log.info('service worker ready');

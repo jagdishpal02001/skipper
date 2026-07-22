@@ -3,10 +3,10 @@
 🔗 **[Official Website](https://skipperai.netlify.app/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
 
 [![Website](https://img.shields.io/badge/Website-skipperai.netlify.app-success)](https://skipperai.netlify.app/)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.0.2-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.1.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
 
 
-Skipper automatically detects and skips sponsored segments in YouTube videos. It combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
+Skipper is an AI-enhanced YouTube viewing assistant. It **skips sponsored segments**, shows an **AI audience rating** for each video (distilled from its top comments), and gives you a **private dashboard** of how you spend time on YouTube. Sponsor detection combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
 
 > Open a video → Skipper checks the local cache & Supabase public database → SponsorBlock community database → Falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
 
@@ -20,8 +20,10 @@ Skipper automatically detects and skips sponsored segments in YouTube videos. It
 - 🎬 **Works on any video** — Transcript, captions, chapters, description, or comments are used as the analysis source.
 - ⏭️ **Automatic skipping** — Jumps past sponsors, self-promos, intros, and outros.
 - 🔔 **Skip alerts** — Non-intrusive notifications each time a segment is skipped.
-- 🧠 **Hybrid cache** — Uses a 30-day local cache (`chrome.storage.local`) combined with a shared public database (Supabase) so once any video is analyzed, all other Skipper users skip it instantly.
-- 🎚️ **Granular control** — Per-category toggles for sponsors, self-promo, intros, and outros.
+- 💬 **AI audience ratings** — A `✦ x/10` badge next to the like/dislike buttons summarizes what viewers think, distilled from the top comments (like-weighted) via YouTube's Gemini. Click it for a positive/negative breakdown and a short summary.
+- 📊 **Private time dashboard** — See total time saved, total time on YouTube, your top channels by watch time, browsing-vs-watching split, and Shorts time. All stored **locally** — nothing leaves your device.
+- 🧠 **Hybrid cache** — Uses a 30-day local cache (`chrome.storage.local`) combined with a shared public database (Supabase) so once any video is analyzed, all other Skipper users skip it (and see its rating) instantly.
+- 🎚️ **Granular control** — Per-category toggles for sponsors, self-promo, intros, and outros, plus a toggle for the rating badge.
 
 ---
 
@@ -144,6 +146,7 @@ src/
 | Skip Self-Promo | on | Creator merchandise, Patreon, channel self-plugs |
 | Skip Intros | off | Branded intro sequences |
 | Skip Outros | off | End cards and outro credits |
+| Rating badge | on | Show the AI audience rating next to like/dislike |
 
 ---
 
@@ -153,6 +156,8 @@ src/
 - SponsorBlock lookups use the privacy-preserving hash-prefix endpoint: only the first four characters of a video ID's SHA-256 hash are sent.
 - The shared Supabase cache is keyed by the **full SHA-256 hash** of the video ID, so the raw ID of the video you are watching is never transmitted.
 - Successful analysis results (sponsor start and end timestamps) are stored in the shared public Supabase database so all Skipper users can benefit from them. No persistent identifier, account info, or watch history is collected, and no usage telemetry is sent.
+- **Audience ratings.** Comments are read same-origin and scored via YouTube's Gemini. Only the derived verdict (a 0–10 rating, positive/negative/neutral percentages, and a one-line summary) is cached — keyed by the **SHA-256 hash** of the video ID, never the raw ID, comments, or any user identifier — and shared through the same public Supabase database so ratings load instantly for everyone.
+- **Usage dashboard.** Time-tracking statistics (time saved, watch/browse/Shorts time, top channels) are computed and stored **only in `chrome.storage.local` on your own device**. They are never transmitted anywhere, are never associated with an account, and can be cleared any time from the dashboard.
 
 ---
 

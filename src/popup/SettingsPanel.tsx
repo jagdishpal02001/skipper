@@ -67,6 +67,15 @@ export function SettingsPanel({ settings, onUpdate }: SettingsPanelProps) {
             />
             <span>Show alerts</span>
           </label>
+          <label className="flex items-center gap-1.5 cursor-pointer text-gray-300 hover:text-white select-none">
+            <input
+              type="checkbox"
+              checked={settings.showRatingBadge}
+              onChange={(e) => onUpdate({ showRatingBadge: e.target.checked })}
+              className="rounded border-white/10 bg-surface-700 text-brand-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
+            />
+            <span>Rating badge</span>
+          </label>
         </div>
       </div>
     </Card>

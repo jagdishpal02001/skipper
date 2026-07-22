@@ -19,6 +19,10 @@ import type { ProviderContext, SegmentProvider } from '@/providers';
 import { sendToBackground } from '@/utils/messaging';
 import { createLogger } from '@/utils/logger';
 import type { TimelineMarkers } from './services/TimelineMarkers';
+import type { UsageTracker } from './services/UsageTracker';
+import type { SentimentService } from './services/SentimentService';
+import type { SentimentBadge } from './services/SentimentBadge';
+import type { VideoSentiment } from '@/types';
 
 const log = createLogger('content');
 
@@ -42,6 +46,12 @@ export interface ContentControllerDeps {
   askProvider: SegmentProvider;
   /** Paints detected segments onto the player progress bar. */
   timeline: TimelineMarkers;
+  /** Records how the user spends time on YouTube (persistent analytics). */
+  usage: UsageTracker;
+  /** Audience-sentiment analysis from the video's top comments. */
+  sentiment: SentimentService;
+  /** The rating badge rendered next to the like/dislike buttons. */
+  badge: SentimentBadge;
 }
 
 const INITIAL_STATE: VideoRuntimeState = {
@@ -66,6 +76,11 @@ export class ContentController {
   private settings: Settings | null = null;
   private analyzeAbort: AbortController | null = null;
   private disposers: (() => void)[] = [];
+  /** Per-video sentiment cache for this page session (avoid re-asking Gemini). */
+  private readonly sentimentCache = new Map<string, VideoSentiment>();
+  private sentimentAbort: AbortController | null = null;
+  /** Videos we already auto-attempted, so settings churn can't re-fire Gemini. */
+  private readonly sentimentAttempted = new Set<string>();
 
   constructor(private readonly deps: ContentControllerDeps) {}
 
@@ -85,6 +100,11 @@ export class ContentController {
     );
     this.disposers.push(
       this.deps.engine.onSkip((event) => {
+        // Persist cumulative "time saved" analytics (feature 1). Fire-and-forget.
+        sendToBackground({
+          type: 'RECORD_USAGE',
+          delta: { skipCount: 1, timeSavedSeconds: event.saved },
+        }).catch(() => { /* silent */ });
         for (const l of this.skipEventListeners) l(event);
       }),
     );
@@ -95,6 +115,7 @@ export class ContentController {
     });
 
     this.deps.engine.start();
+    this.deps.usage.start();
     this.disposers.push(this.deps.detector.onChange((id) => this.onVideo(id)));
     this.deps.detector.start();
   }
@@ -102,7 +123,10 @@ export class ContentController {
   dispose(): void {
     this.deps.detector.stop();
     this.deps.engine.stop();
+    this.deps.usage.stop();
+    this.deps.badge.clear();
     this.analyzeAbort?.abort();
+    this.sentimentAbort?.abort();
     this.disposers.forEach((d) => d());
     this.disposers = [];
   }
@@ -156,6 +180,8 @@ export class ContentController {
           patch: { enabled: message.enabled },
         });
         return { ok: true } as R;
+      case 'GET_SENTIMENT':
+        return (await this.getSentiment(message.force, message.cachedOnly)) as R;
       default: {
         const _never: never = message;
         throw new Error(`Unknown content message ${JSON.stringify(_never)}`);
@@ -178,12 +204,132 @@ export class ContentController {
     this.deps.player.currentTime = start;
   }
 
+  /**
+   * Resolve audience sentiment for the current video with the full cascade:
+   * in-memory → local cache / shared Supabase DB (via background) → Ask
+   * Gemini. `force` bypasses every cache; `cachedOnly` stops before Gemini
+   * (used by the popup on open so it never triggers analysis by itself).
+   */
+  private async getSentiment(
+    force?: boolean,
+    cachedOnly?: boolean,
+  ): Promise<ContentResponseMap['GET_SENTIMENT']> {
+    const videoId = this.state.metadata?.videoId ?? this.deps.detector.videoId;
+    if (!videoId) return { ok: false, error: 'No video is currently playing' };
+
+    if (!force) {
+      const cached = await this.lookupSentiment(videoId);
+      if (cached) return { ok: true, sentiment: cached };
+    }
+    if (cachedOnly) return { ok: false, error: 'NOT_CACHED' };
+
+    try {
+      const sentiment = await this.deps.sentiment.analyze(videoId);
+      this.commitSentiment(sentiment);
+      return { ok: true, sentiment };
+    } catch (error) {
+      log.warn('sentiment analysis failed', error);
+      return { ok: false, error: this.message(error) };
+    }
+  }
+
+  /** In-memory first, then the background's local-cache → Supabase cascade. */
+  private async lookupSentiment(
+    videoId: string,
+  ): Promise<VideoSentiment | null> {
+    const mem = this.sentimentCache.get(videoId);
+    if (mem) return mem;
+    try {
+      const { sentiment } = await sendToBackground({
+        type: 'SENTIMENT_LOOKUP',
+        videoId,
+      });
+      if (sentiment) this.sentimentCache.set(videoId, sentiment);
+      return sentiment;
+    } catch {
+      return null;
+    }
+  }
+
+  /** Cache a fresh verdict everywhere and reflect it on the page badge. */
+  private commitSentiment(sentiment: VideoSentiment): void {
+    this.sentimentCache.set(sentiment.videoId, sentiment);
+    sendToBackground({ type: 'SENTIMENT_STORE', sentiment }).catch(() => {
+      /* silent */
+    });
+    if (this.badgeEnabled && this.deps.detector.videoId === sentiment.videoId) {
+      this.deps.badge.showRating(sentiment);
+    }
+  }
+
+  private get badgeEnabled(): boolean {
+    return Boolean(this.settings?.enabled && this.settings.showRatingBadge);
+  }
+
+  /**
+   * Automatic sentiment for the on-page badge. Cache/DB hits render instantly;
+   * otherwise analysis runs through the silent InnerTube API driver only — the
+   * DOM fallback would visibly open the Ask panel on every video, so auto-runs
+   * never use it. If nothing worked, the badge degrades to a click-to-rate
+   * chip (whose manual run may use the full driver cascade).
+   */
+  private async autoSentiment(videoId: string): Promise<void> {
+    if (!this.badgeEnabled || this.state.metadata?.isLive) return;
+
+    const abort = new AbortController();
+    this.sentimentAbort = abort;
+
+    try {
+      const cached = await this.lookupSentiment(videoId);
+      if (abort.signal.aborted || this.deps.detector.videoId !== videoId) return;
+      if (cached) {
+        this.deps.badge.showRating(cached);
+        return;
+      }
+
+      // Only one Gemini auto-attempt per video per page session.
+      if (this.sentimentAttempted.has(videoId)) {
+        this.armBadgePrompt(videoId);
+        return;
+      }
+      this.sentimentAttempted.add(videoId);
+
+      this.deps.badge.showLoading();
+      const sentiment = await this.deps.sentiment.analyze(videoId, {
+        signal: abort.signal,
+        apiOnly: true,
+      });
+      if (abort.signal.aborted || this.deps.detector.videoId !== videoId) return;
+      this.commitSentiment(sentiment);
+    } catch (error) {
+      if (abort.signal.aborted) return;
+      log.debug('auto sentiment unavailable', error);
+      this.armBadgePrompt(videoId);
+    }
+  }
+
+  /** Show the click-to-rate chip; a click runs the full manual analysis. */
+  private armBadgePrompt(videoId: string): void {
+    if (!this.badgeEnabled || this.deps.detector.videoId !== videoId) return;
+    this.deps.badge.showPrompt(() => {
+      this.deps.badge.showLoading();
+      void this.getSentiment(false).then((res) => {
+        if (this.deps.detector.videoId !== videoId) return;
+        if (res.ok) this.deps.badge.showRating(res.sentiment);
+        else this.armBadgePrompt(videoId); // re-arm so the user can retry
+      });
+    });
+  }
+
   // ---- core flow --------------------------------------------------------
 
   private async onVideo(videoId: string | null): Promise<void> {
     this.analyzeAbort?.abort();
+    this.sentimentAbort?.abort();
     this.deps.engine.load([]);
     this.deps.timeline.clear();
+    this.deps.badge.clear();
+    this.deps.usage.setChannel(null);
     this.setState({ ...INITIAL_STATE });
 
     if (!videoId) return;
@@ -205,6 +351,7 @@ export class ContentController {
       if (!metadata.durationSeconds && this.deps.player.duration > 0) {
         metadata.durationSeconds = this.deps.player.duration;
       }
+      this.deps.usage.setChannel(metadata.channel);
       this.patch({ metadata });
 
       if (!this.settings?.enabled) {
@@ -225,12 +372,13 @@ export class ContentController {
       if (cached) {
         log.info('cache hit — skipping analysis', videoId);
         this.applyResult(cached, true);
-        return;
-      }
-
-      if (this.settings?.autoAnalyze) {
+      } else if (this.settings?.autoAnalyze) {
         await this.analyze(false);
       }
+
+      // Sequenced *after* segment analysis settles so we never hold two
+      // concurrent Ask Gemini panel sessions on the same video.
+      void this.autoSentiment(videoId);
     } catch (error) {
       log.error('onVideo failed', error);
 
@@ -482,6 +630,16 @@ export class ContentController {
         this.deps.engine.getActiveSegments(),
         this.state.result.durationSeconds,
       );
+    }
+
+    // Rating badge follows its toggle live. Re-arming goes through
+    // autoSentiment, whose attempt guard prevents settings churn from
+    // re-firing Gemini for a video that already failed.
+    if (!this.badgeEnabled) {
+      this.deps.badge.clear();
+    } else {
+      const videoId = this.deps.detector.videoId;
+      if (videoId) void this.autoSentiment(videoId);
     }
   }
 

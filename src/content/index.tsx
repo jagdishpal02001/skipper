@@ -14,6 +14,10 @@ import { ContentController } from './ContentController';
 import { AskGeminiApi } from './services/AskGeminiApi';
 import { AskGeminiPanel } from './services/AskGeminiPanel';
 import { TimelineMarkers } from './services/TimelineMarkers';
+import { UsageTracker } from './services/UsageTracker';
+import { CommentsApi } from './services/CommentsApi';
+import { SentimentService } from './services/SentimentService';
+import { SentimentBadge } from './services/SentimentBadge';
 import { ToastStack } from './widget/Toast';
 import widgetCss from './widget/widget.css?inline';
 
@@ -26,18 +30,20 @@ const log = createLogger('content:boot');
 function bootstrap(): void {
   const player = new YouTubePlayer();
   const data = new YouTubeData();
+  // Prefer the InnerTube API (no UI disruption); fall back to driving the DOM.
+  // Shared by both sponsor-segment analysis and sentiment analysis.
+  const askDrivers = [new AskGeminiApi(), new AskGeminiPanel()];
   const controller = new ContentController({
     detector: new VideoDetector(),
     data,
     transcripts: new TranscriptService(data),
     player,
     engine: new SponsorSkipEngine(player),
-    // Prefer the InnerTube API (no UI disruption); fall back to driving the DOM.
-    askProvider: new AskGeminiProvider([
-      new AskGeminiApi(),
-      new AskGeminiPanel(),
-    ]),
+    askProvider: new AskGeminiProvider(askDrivers),
     timeline: new TimelineMarkers(),
+    usage: new UsageTracker(player),
+    sentiment: new SentimentService(askDrivers, new CommentsApi()),
+    badge: new SentimentBadge(),
   });
 
   void controller.init();

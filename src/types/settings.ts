@@ -11,6 +11,8 @@ export interface Settings {
   autoAnalyze: boolean;
   /** Show a toast each time a segment is skipped. */
   showNotifications: boolean;
+  /** Show the audience-rating badge next to the like/dislike buttons. */
+  showRatingBadge: boolean;
   /** Per-category skip toggles. */
   skip: Record<SkippableCategory, boolean>;
 }
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
   autoAnalyze: true,
   showNotifications: true,
+  showRatingBadge: true,
   skip: {
     sponsor: true,
     self_promo: true,

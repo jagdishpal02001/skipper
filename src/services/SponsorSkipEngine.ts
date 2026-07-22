@@ -9,6 +9,8 @@ export interface SkipEvent {
   segment: SponsorSegment;
   from: number;
   to: number;
+  /** Seconds of playback saved by this skip. */
+  saved: number;
 }
 
 export interface SkipStats {
@@ -134,7 +136,7 @@ export class SponsorSkipEngine {
       timeSavedSeconds: this.stats.timeSavedSeconds + saved,
     };
     log.info(`skipped ${segment.type} ${segment.start}→${segment.end}`);
-    this.emitSkip({ segment, from: time, to: target });
+    this.emitSkip({ segment, from: time, to: target, saved });
     this.emitStats();
   }
 

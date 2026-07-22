@@ -2,6 +2,8 @@ import type { AnalysisResult, SponsorSegment } from './segment';
 import type { Settings } from './settings';
 import type { VideoMetadata } from './video';
 import type { ErrorLogEntry } from './errorLog';
+import type { UsageDelta, UsageSummary } from './usage';
+import type { VideoSentiment } from './sentiment';
 
 /**
  * Runtime status of analysis for a given video. Surfaced in both the in-player
@@ -45,7 +47,14 @@ export type BackgroundRequest =
   | { type: 'CLEAR_ERROR_LOGS' }
   | { type: 'SUPABASE_LOOKUP'; videoId: string; duration: number }
   | { type: 'SUPABASE_STORE'; videoId: string; duration: number; segments: SponsorSegment[]; provider?: string }
-  | { type: 'SPONSORBLOCK_LOOKUP'; videoId: string };
+  | { type: 'SPONSORBLOCK_LOOKUP'; videoId: string }
+  | { type: 'RECORD_USAGE'; delta: UsageDelta }
+  | { type: 'GET_USAGE_STATS'; days?: number }
+  | { type: 'CLEAR_USAGE_STATS' }
+  /** Cheap cascade: local cache first, then the shared Supabase DB. */
+  | { type: 'SENTIMENT_LOOKUP'; videoId: string }
+  /** Persist a fresh verdict locally and share it via Supabase. */
+  | { type: 'SENTIMENT_STORE'; sentiment: VideoSentiment };
 
 export interface CacheInfo {
   entries: number;
@@ -68,6 +77,11 @@ export type BackgroundResponseMap = {
   SUPABASE_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
   SUPABASE_STORE: { ok: true };
   SPONSORBLOCK_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
+  RECORD_USAGE: { ok: true };
+  GET_USAGE_STATS: { ok: true; summary: UsageSummary };
+  CLEAR_USAGE_STATS: { ok: true };
+  SENTIMENT_LOOKUP: { ok: true; sentiment: VideoSentiment | null };
+  SENTIMENT_STORE: { ok: true };
 };
 
 export type BackgroundResponse<T extends BackgroundRequest['type']> =
@@ -79,12 +93,14 @@ export type BackgroundResponse<T extends BackgroundRequest['type']> =
 export type ContentRequest =
   | { type: 'GET_STATE' }
   | { type: 'REANALYZE' }
-  | { type: 'SET_ENABLED'; enabled: boolean };
+  | { type: 'SET_ENABLED'; enabled: boolean }
+  | { type: 'GET_SENTIMENT'; force?: boolean; cachedOnly?: boolean };
 
 export type ContentResponseMap = {
   GET_STATE: { ok: true; state: VideoRuntimeState };
   REANALYZE: { ok: true };
   SET_ENABLED: { ok: true };
+  GET_SENTIMENT: { ok: true; sentiment: VideoSentiment } | { ok: false; error: string };
 };
 
 export type ContentResponse<T extends ContentRequest['type']> =

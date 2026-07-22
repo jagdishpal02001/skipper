@@ -44,6 +44,12 @@ export class YouTubePlayer {
     return this.resolve()?.playbackRate ?? 1;
   }
 
+  /** Whether playback is currently paused (or no video is present). */
+  get paused(): boolean {
+    const video = this.resolve();
+    return video ? video.paused : true;
+  }
+
   /** A livestream has a non-finite duration. We must not auto-skip those. */
   get isLive(): boolean {
     const video = this.resolve();
