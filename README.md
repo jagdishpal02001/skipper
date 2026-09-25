@@ -1,5 +1,4 @@
-# Skipper — AI Sponsor Skip for YouTube
-
+# Skipper AI — YouTube Sponsor Skipper with Ask Gemini + SponsorBlock
 🔗 **[Official Website](https://skipperai.netlify.app/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
 
 [![Website](https://img.shields.io/badge/Website-skipperai.netlify.app-success)](https://skipperai.netlify.app/)
