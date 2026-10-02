@@ -18,6 +18,8 @@ import type { SkipEvent } from '@/services';
 import type { ProviderContext, SegmentProvider } from '@/providers';
 import { sendToBackground } from '@/utils/messaging';
 import { createLogger } from '@/utils/logger';
+import { formatDuration } from '@/utils/time';
+import { REVIEWS_URL } from '@/utils/growth';
 import type { TimelineMarkers } from './services/TimelineMarkers';
 import type { UsageTracker } from './services/UsageTracker';
 import type { SentimentService } from './services/SentimentService';
@@ -32,8 +34,10 @@ const log = createLogger('content');
  * user to open the popup.
  */
 export interface ContentNotice {
-  kind: 'error' | 'info';
+  kind: 'error' | 'info' | 'milestone';
   text: string;
+  /** Buttons on the toast (e.g. "Rate" / "Share" on a milestone). */
+  actions?: { label: string; run: () => void }[];
 }
 
 export interface ContentControllerDeps {
@@ -81,6 +85,12 @@ export class ContentController {
   private sentimentAbort: AbortController | null = null;
   /** Videos we already auto-attempted, so settings churn can't re-fire Gemini. */
   private readonly sentimentAttempted = new Set<string>();
+  /**
+   * Automatic analyses toast a failure once per page session. Most misses are
+   * coverage gaps (no community data, no Ask on that video) that recur on
+   * video after video, and a toast on each reads as Skipper being broken.
+   */
+  private failureNoticeShown = false;
 
   constructor(private readonly deps: ContentControllerDeps) {}
 
@@ -100,11 +110,16 @@ export class ContentController {
     );
     this.disposers.push(
       this.deps.engine.onSkip((event) => {
-        // Persist cumulative "time saved" analytics (feature 1). Fire-and-forget.
+        // Persist cumulative "time saved" analytics (feature 1), and celebrate
+        // if this skip reached a new all-time milestone. Never blocks skipping.
         sendToBackground({
           type: 'RECORD_USAGE',
           delta: { skipCount: 1, timeSavedSeconds: event.saved },
-        }).catch(() => { /* silent */ });
+        })
+          .then((res) => {
+            if (res.milestone) this.celebrate(res.milestone);
+          })
+          .catch(() => { /* silent */ });
         for (const l of this.skipEventListeners) l(event);
       }),
     );
@@ -160,6 +175,47 @@ export class ContentController {
 
   private emitNotice(notice: ContentNotice): void {
     for (const l of this.noticeListeners) l(notice);
+  }
+
+  /**
+   * In-page moment of delight when all-time time saved reaches a milestone.
+   * Also the one place most users — who rarely open the popup — are asked to
+   * rate or share Skipper, each milestone at most once.
+   */
+  private celebrate(savedSeconds: number): void {
+    this.emitNotice({
+      kind: 'milestone',
+      text: `🎉 Skipper has saved you ${formatDuration(savedSeconds)} of sponsor reads!`,
+      actions: [
+        {
+          label: '★ Rate Skipper',
+          run: () => {
+            window.open(REVIEWS_URL, '_blank', 'noopener');
+            sendToBackground({
+              type: 'UPDATE_GROWTH',
+              patch: { ratedAt: Date.now() },
+            }).catch(() => { /* silent */ });
+          },
+        },
+        {
+          label: 'Share',
+          run: () => {
+            sendToBackground({ type: 'OPEN_DASHBOARD', section: 'share' }).catch(
+              () => { /* silent */ },
+            );
+          },
+        },
+      ],
+    });
+  }
+
+  /** Show how many segments will be skipped on this tab's toolbar icon. */
+  private updateToolbarBadge(): void {
+    const count =
+      this.settings?.enabled && this.state.result
+        ? this.deps.engine.getActiveSegments().length
+        : 0;
+    sendToBackground({ type: 'SET_BADGE', count }).catch(() => { /* silent */ });
   }
 
   // ---- popup message handling ------------------------------------------
@@ -331,6 +387,7 @@ export class ContentController {
     this.deps.badge.clear();
     this.deps.usage.setChannel(null);
     this.setState({ ...INITIAL_STATE });
+    this.updateToolbarBadge();
 
     if (!videoId) return;
 
@@ -406,10 +463,15 @@ export class ContentController {
     this.patch({ status: 'analyzing', error: undefined });
 
     const duration = Math.round(metadata.durationSeconds);
+    // SponsorBlock is asked at most once per run, by whichever step needs it
+    // first.
+    let communityLookup: Promise<SponsorSegment[] | null> | undefined;
+    const sponsorBlock = () =>
+      (communityLookup ??= this.lookupSponsorBlock(metadata));
 
     try {
-      // ---- Step 0: Local cache ----
       if (!force) {
+        // ---- Step 0: Local cache ----
         const { result } = await sendToBackground({
           type: 'GET_CACHED',
           videoId: metadata.videoId,
@@ -418,34 +480,30 @@ export class ContentController {
           this.applyResult(result, true);
           return;
         }
-      }
 
-      // ---- Step 1: Supabase (shared public DB) ----
-      if (!force) {
-        try {
-          const { segments: dbSegments } = await sendToBackground({
-            type: 'SUPABASE_LOOKUP',
-            videoId: metadata.videoId,
-            duration,
-          });
-          if (dbSegments && dbSegments.length > 0) {
-            log.info('Supabase hit', metadata.videoId);
-            await this.commit(metadata, dbSegments, 'supabase');
-            return;
-          }
-          log.debug('Supabase miss', metadata.videoId);
-        } catch (error) {
-          log.warn('Supabase lookup failed, continuing', error);
+        // ---- Step 1: Community data ----
+        // SponsorBlock's human-verified, frame-accurate segments win; then our
+        // shared DB of earlier Gemini answers. Both are quick lookups, so they
+        // run side by side.
+        const [community, shared] = await Promise.all([
+          sponsorBlock(),
+          this.lookupShared(metadata.videoId, duration),
+        ]);
+        if (community) {
+          await this.commit(metadata, community, 'sponsorblock');
+          return;
+        }
+        if (shared) {
+          await this.commit(metadata, shared, 'supabase');
+          return;
         }
       }
 
-      // ---- Step 2: Live resolution — Ask Gemini ⇆ SponsorBlock ----
-      // Priority depends on whether YouTube's "Ask about this video" AI feature
-      // is usable for this visitor/video:
-      //   • Signed in with the feature available → Gemini first (most accurate,
-      //     per-video) and store the result in our shared DB. Fall back to the
-      //     public SponsorBlock DB only if Gemini actually fails for this video.
-      //   • Signed out / no AI button → go straight to the SponsorBlock DB.
+      // ---- Step 2: Ask Gemini ----
+      // For videos nobody has covered yet, or an explicit re-analysis (the user
+      // wants a fresh opinion). It takes several seconds and spends the user's
+      // Ask quota, so automatic runs only get here when community data has
+      // nothing. Needs a signed-in YouTube session with the AI feature.
       const ctx: ProviderContext = {
         metadata,
         transcript: null,
@@ -461,7 +519,7 @@ export class ContentController {
         } catch (error) {
           if (abort.signal.aborted) return;
           log.warn('Ask Gemini failed — falling back to SponsorBlock', error);
-          const fallback = await this.lookupSponsorBlock(metadata);
+          const fallback = await sponsorBlock();
           if (fallback) {
             await this.commit(metadata, fallback, 'sponsorblock');
             return;
@@ -470,8 +528,8 @@ export class ContentController {
         }
       }
 
-      // Signed out / no AI feature available: rely on the public community DB.
-      const community = await this.lookupSponsorBlock(metadata);
+      // Signed out / no AI feature available: community data is all there is.
+      const community = await sponsorBlock();
       if (community) {
         await this.commit(metadata, community, 'sponsorblock');
         return;
@@ -495,7 +553,10 @@ export class ContentController {
         status: 'error',
         error: 'Failed to fetch sponsored timestamps',
       });
-      this.emitNotice({ kind: 'error', text: this.noticeFor(error) });
+      if (force || !this.failureNoticeShown) {
+        this.failureNoticeShown = true;
+        this.emitNotice({ kind: 'error', text: this.noticeFor(error) });
+      }
     }
   }
 
@@ -548,15 +609,46 @@ export class ContentController {
   }
 
   /**
+   * Look up our shared Supabase DB of earlier Gemini answers. Returns the
+   * segments on a hit, or null on a miss/error so callers cascade.
+   */
+  private async lookupShared(
+    videoId: string,
+    duration: number,
+  ): Promise<SponsorSegment[] | null> {
+    try {
+      const { segments } = await sendToBackground({
+        type: 'SUPABASE_LOOKUP',
+        videoId,
+        duration,
+      });
+      if (segments && segments.length > 0) {
+        log.info('Supabase hit', videoId);
+        return segments;
+      }
+      log.debug('Supabase miss', videoId);
+      return null;
+    } catch (error) {
+      log.warn('Supabase lookup failed, continuing', error);
+      return null;
+    }
+  }
+
+  /**
    * Maps an analysis error to a short, user-facing toast message. When the Ask
    * Gemini panel/API is unavailable (not signed in, or YouTube doesn't expose
    * the AI feature here) and the community DB also had nothing, nudge the user
-   * to sign in. Otherwise show a generic "something went wrong" message.
+   * to sign in. When signed in but YouTube doesn't offer Ask on this video,
+   * say there's no data rather than blaming an error. Otherwise show a
+   * generic "something went wrong" message.
    */
   private noticeFor(error: unknown): string {
     const msg = this.message(error);
     if (/no ask gemini backend|not available|unavailable|not logged in/i.test(msg)) {
       return "Sign in to YouTube — Skipper couldn't find sponsors for this video.";
+    }
+    if (/continuation not found|button not found/i.test(msg)) {
+      return "Skipper couldn't find sponsor data for this video.";
     }
     return 'Something went wrong — Skipper couldn’t analyze this video.';
   }
@@ -577,7 +669,7 @@ export class ContentController {
       createdAt: Date.now(),
     };
     await sendToBackground({ type: 'SAVE_RESULT', result });
-    this.applyResult(result, false);
+    if (!this.applyResult(result, false)) return;
 
     // A fresh, successful analysis that found nothing: let the user know the
     // video is clean rather than leaving them wondering whether it ran.
@@ -589,7 +681,13 @@ export class ContentController {
     }
   }
 
-  private applyResult(result: AnalysisResult, fromCache: boolean): void {
+  /**
+   * Load a result into the skip engine, timeline and state. Returns false (and
+   * does nothing) when the user has already moved on to another video — a
+   * lookup that resolves late must never skip parts of the next one.
+   */
+  private applyResult(result: AnalysisResult, fromCache: boolean): boolean {
+    if (this.deps.detector.videoId !== result.videoId) return false;
     this.deps.engine.load(result.segments);
     if (this.settings?.enabled) {
       this.deps.timeline.render(
@@ -606,9 +704,11 @@ export class ContentController {
       skippedCount: 0,
       timeSavedSeconds: 0,
     });
+    this.updateToolbarBadge();
     log.info(
       `ready: ${result.segments.length} segments via ${result.provider}`,
     );
+    return true;
   }
 
   private async refreshSettings(): Promise<void> {
@@ -631,6 +731,7 @@ export class ContentController {
         this.state.result.durationSeconds,
       );
     }
+    this.updateToolbarBadge();
 
     // Rating badge follows its toggle live. Re-arming goes through
     // autoSentiment, whose attempt guard prevents settings churn from

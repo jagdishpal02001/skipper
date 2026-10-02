@@ -4,6 +4,7 @@ import type { VideoMetadata } from './video';
 import type { ErrorLogEntry } from './errorLog';
 import type { UsageDelta, UsageSummary } from './usage';
 import type { VideoSentiment } from './sentiment';
+import type { GrowthState } from './growth';
 
 /**
  * Runtime status of analysis for a given video. Surfaced in both the in-player
@@ -54,7 +55,14 @@ export type BackgroundRequest =
   /** Cheap cascade: local cache first, then the shared Supabase DB. */
   | { type: 'SENTIMENT_LOOKUP'; videoId: string }
   /** Persist a fresh verdict locally and share it via Supabase. */
-  | { type: 'SENTIMENT_STORE'; sentiment: VideoSentiment };
+  | { type: 'SENTIMENT_STORE'; sentiment: VideoSentiment }
+  /** Rating-ask / milestone bookkeeping (see GrowthState). */
+  | { type: 'GET_GROWTH' }
+  | { type: 'UPDATE_GROWTH'; patch: Partial<GrowthState> }
+  /** Number of skippable segments to show on the sender tab's toolbar icon. */
+  | { type: 'SET_BADGE'; count: number }
+  /** Open the dashboard page, optionally at its share section. */
+  | { type: 'OPEN_DASHBOARD'; section?: 'share' };
 
 export interface CacheInfo {
   entries: number;
@@ -77,11 +85,16 @@ export type BackgroundResponseMap = {
   SUPABASE_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
   SUPABASE_STORE: { ok: true };
   SPONSORBLOCK_LOOKUP: { ok: true; segments: SponsorSegment[] | null };
-  RECORD_USAGE: { ok: true };
+  /** `milestone`: all-time seconds saved, when this delta reached a new milestone. */
+  RECORD_USAGE: { ok: true; milestone: number | null };
   GET_USAGE_STATS: { ok: true; summary: UsageSummary };
   CLEAR_USAGE_STATS: { ok: true };
   SENTIMENT_LOOKUP: { ok: true; sentiment: VideoSentiment | null };
   SENTIMENT_STORE: { ok: true };
+  GET_GROWTH: { ok: true; growth: GrowthState };
+  UPDATE_GROWTH: { ok: true; growth: GrowthState };
+  SET_BADGE: { ok: true };
+  OPEN_DASHBOARD: { ok: true };
 };
 
 export type BackgroundResponse<T extends BackgroundRequest['type']> =

@@ -1,4 +1,4 @@
-# Chrome Web Store listing & privacy copy — v1.1.0
+# Chrome Web Store listing & privacy copy — v1.2.0
 
 Copy for the CWS Developer Dashboard and the public privacy policy. Written to
 satisfy the **single-purpose** and **limited-use / disclosure** policies that
@@ -17,7 +17,7 @@ triggered the earlier rejection. Paste into the dashboard fields as marked.
 **Skipper makes YouTube smarter in three ways — skip the filler, know what viewers think, and understand your own habits.**
 
 ⏭️ **Skip sponsors automatically**
-Skipper detects and skips sponsored segments, self-promos, intros, and outros. It uses the crowd-sourced SponsorBlock community database (covering millions of videos, no sign-in required) and, for videos not yet covered, YouTube's own built-in "Ask about this video" Gemini feature. No developer API key, no paid subscription.
+Skipper detects and skips sponsored segments, self-promos, intros, and outros. It uses the crowd-sourced SponsorBlock community database (covering millions of videos, no sign-in required) and, for videos not yet covered, YouTube's own built-in "Ask about this video" Gemini feature. No developer API key, no paid subscription. Pin Skipper and its toolbar icon shows how many sponsors it found in the video you're watching.
 
 💬 **See what viewers really think**
 A small rating badge appears next to the like/dislike buttons: an AI audience score out of 10, distilled from the video's top comments and weighted by how many likes each comment received — so popular opinions count for more. Click it for a positive / neutral / negative breakdown and a one-line summary. Turn it off any time in settings.

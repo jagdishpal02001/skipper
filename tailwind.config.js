@@ -3,6 +3,7 @@ export default {
   content: [
     './src/popup/**/*.{ts,tsx,html}',
     './src/dashboard/**/*.{ts,tsx,html}',
+    './src/welcome/**/*.{ts,tsx,html}',
     './src/components/**/*.{ts,tsx}',
   ],
   theme: {

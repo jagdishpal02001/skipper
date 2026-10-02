@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Card } from '@/components';
+import { Card, SharePanel } from '@/components';
 import { useUsageStats } from '@/hooks';
 import { formatDuration } from '@/utils/time';
 import type { ChannelTotal, UsageTotals } from '@/types';
@@ -26,6 +26,8 @@ const RANGES: { label: string; days: number }[] = [
 export function Dashboard() {
   const [days, setDays] = useState(0);
   const { summary, loading, refresh, reset } = useUsageStats(days);
+  // Opened straight to sharing from the in-page milestone toast.
+  const [showShare, setShowShare] = useState(() => location.hash === '#share');
 
   const handleReset = async () => {
     if (
@@ -61,8 +63,16 @@ export function Dashboard() {
 
       {/* Time saved — the headline number, always all-time ("overall"). */}
       <div className="mb-5 rounded-2xl border border-brand-500/30 bg-gradient-to-br from-brand-600/20 to-surface-800 p-5">
-        <div className="text-xs font-medium uppercase tracking-wide text-brand-400">
-          Time saved with Skipper
+        <div className="flex items-start justify-between gap-3">
+          <div className="text-xs font-medium uppercase tracking-wide text-brand-400">
+            Time saved with Skipper
+          </div>
+          <button
+            onClick={() => setShowShare((v) => !v)}
+            className="rounded-full border border-brand-500/40 px-3 py-1 text-xs font-semibold text-brand-400 hover:bg-brand-500/15"
+          >
+            ♥ Share your stats
+          </button>
         </div>
         <div className="mt-1 text-4xl font-bold text-white">
           {summary ? formatDuration(summary.allTime.timeSavedSeconds) : '—'}
@@ -75,6 +85,14 @@ export function Dashboard() {
           segment{summary?.allTime.skipCount === 1 ? '' : 's'} skipped, all time
         </div>
       </div>
+
+      {showShare && (
+        <div id="share" className="mb-5">
+          <Card title="Share Skipper with a friend">
+            <SharePanel stats={summary?.allTime} />
+          </Card>
+        </div>
+      )}
 
       {/* Range toggle governs everything below. */}
       <div className="mb-4 flex items-center gap-1 rounded-lg bg-surface-800 p-1">

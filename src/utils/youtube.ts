@@ -3,16 +3,20 @@
  * so they can be unit tested in isolation.
  */
 
-/** Extract the `v` query param (the video id) from a YouTube watch URL. */
+/**
+ * Extract the `v` query param (the video id) from a YouTube watch URL. Shorts
+ * deliberately return null, so they're treated like any other non-video page:
+ * skipping inside a Short isn't useful, and analyzing every swiped Short cost
+ * page fetches, Gemini calls and a toast each time.
+ */
 export function extractVideoId(url: string): string | null {
   try {
     const parsed = new URL(url);
-    if (parsed.hostname.endsWith('youtube.com')) {
-      if (parsed.pathname === '/watch') {
-        return parsed.searchParams.get('v');
-      }
-      const shortsMatch = parsed.pathname.match(/^\/shorts\/([\w-]{6,})/);
-      if (shortsMatch) return shortsMatch[1] ?? null;
+    if (
+      parsed.hostname.endsWith('youtube.com') &&
+      parsed.pathname === '/watch'
+    ) {
+      return parsed.searchParams.get('v');
     }
     if (parsed.hostname === 'youtu.be') {
       return parsed.pathname.slice(1) || null;
@@ -23,7 +27,7 @@ export function extractVideoId(url: string): string | null {
   }
 }
 
-/** True when the given URL is a watchable YouTube video page. */
+/** True when the given URL is a YouTube watch page (Shorts excluded). */
 export function isWatchUrl(url: string): boolean {
   return extractVideoId(url) !== null;
 }

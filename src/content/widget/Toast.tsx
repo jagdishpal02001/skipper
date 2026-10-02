@@ -1,17 +1,20 @@
 import { useEffect, useState } from 'react';
 import { formatTimestamp } from '@/utils/time';
 import type { SkipEvent } from '@/services';
-import type { ContentController } from '../ContentController';
+import type { ContentController, ContentNotice } from '../ContentController';
 
 interface ToastItem {
   id: number;
   text: string;
   /** Skip toasts carry a seek-back target; notice toasts ("error"/"info") don't. */
-  kind: 'skip' | 'error' | 'info';
+  kind: 'skip' | ContentNotice['kind'];
   segmentStart?: number;
+  actions?: ContentNotice['actions'];
 }
 
 const TOAST_TTL_MS = 3200;
+/** Toasts with buttons stay up long enough to read and act on. */
+const ACTION_TOAST_TTL_MS = 12000;
 
 /**
  * Renders transient in-page toasts: "Skipped Sponsor Segment (m:ss → m:ss)" on
@@ -30,7 +33,7 @@ export function ToastStack({ controller }: { controller: ContentController }) {
       setToasts((prev) => [...prev, { ...item, id }]);
       window.setTimeout(
         () => setToasts((prev) => prev.filter((t) => t.id !== id)),
-        TOAST_TTL_MS,
+        item.actions?.length ? ACTION_TOAST_TTL_MS : TOAST_TTL_MS,
       );
     };
 
@@ -47,7 +50,7 @@ export function ToastStack({ controller }: { controller: ContentController }) {
 
     const unsubNotice = controller.onNotice((notice) => {
       if (!controller.notificationsEnabled) return;
-      push({ kind: notice.kind, text: notice.text });
+      push({ kind: notice.kind, text: notice.text, actions: notice.actions });
     });
 
     return () => {
@@ -64,18 +67,32 @@ export function ToastStack({ controller }: { controller: ContentController }) {
         <div
           key={t.id}
           className={`skipper-toast${
-            t.kind === 'error' ? ' skipper-toast--error' : ''
+            t.kind === 'error' || t.kind === 'milestone'
+              ? ` skipper-toast--${t.kind}`
+              : ''
           }`}
         >
           <span>{t.text}</span>
           {t.kind === 'skip' && t.segmentStart !== undefined && (
             <button
-              className="skipper-toast-undo"
+              className="skipper-toast-action"
               onClick={() => controller.undoSkip(t.segmentStart!)}
             >
               Undo
             </button>
           )}
+          {t.actions?.map((action) => (
+            <button
+              key={action.label}
+              className="skipper-toast-action"
+              onClick={() => {
+                action.run();
+                setToasts((prev) => prev.filter((x) => x.id !== t.id));
+              }}
+            >
+              {action.label}
+            </button>
+          ))}
         </div>
       ))}
     </div>

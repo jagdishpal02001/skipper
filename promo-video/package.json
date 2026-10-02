@@ -1,0 +1,25 @@
+{
+  "name": "skipper-promo-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Promotional motion video for Skipper AI, built with Remotion.",
+  "type": "module",
+  "scripts": {
+    "audio": "node scripts/generate-audio.mjs",
+    "studio": "remotion studio src/index.ts",
+    "render": "npm run audio && remotion render src/index.ts SkipperPromo out/skipper-promo-raw.mp4 && node scripts/finalize.mjs",
+    "still": "remotion still src/index.ts SkipperPromo out/still.png",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.532",
+    "@remotion/google-fonts": "4.0.532",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "remotion": "4.0.532"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.5",
+    "typescript": "^5.5.4"
+  }
+}

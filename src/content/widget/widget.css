@@ -46,7 +46,19 @@
   line-height: 1.35;
 }
 
-.skipper-toast-undo {
+/* Milestone celebrations ("Skipper has saved you 1h…") with Rate / Share. */
+.skipper-toast--milestone {
+  border-left-color: #22c55e;
+  white-space: normal;
+  max-width: 520px;
+  line-height: 1.35;
+}
+
+.skipper-toast--milestone .skipper-toast-action {
+  white-space: nowrap;
+}
+
+.skipper-toast-action {
   background: rgba(59, 130, 246, 0.15);
   border: 1px solid rgba(59, 130, 246, 0.25);
   color: #60a5fa;
@@ -60,14 +72,14 @@
   transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.skipper-toast-undo:hover {
+.skipper-toast-action:hover {
   background: rgba(59, 130, 246, 0.25);
   border-color: rgba(59, 130, 246, 0.4);
   color: #93c5fd;
   transform: translateY(-0.5px);
 }
 
-.skipper-toast-undo:active {
+.skipper-toast-action:active {
   transform: translateY(0.5px);
   background: rgba(59, 130, 246, 0.35);
 }

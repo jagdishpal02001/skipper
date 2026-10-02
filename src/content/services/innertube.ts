@@ -92,16 +92,70 @@ export async function postInnertube(
   return res.json();
 }
 
-/** Same-origin fetch of a watch page's HTML (carries context + init data). */
-export async function fetchWatchPageHtml(
+/** How long a downloaded watch page is reused before fetching it again. */
+const WATCH_PAGE_TTL_MS = 5 * 60 * 1000;
+
+let watchPage: {
+  videoId: string;
+  fetchedAt: number;
+  html: Promise<string>;
+} | null = null;
+
+/**
+ * Same-origin fetch of a watch page's HTML (carries context + init data).
+ *
+ * The most recent video's page is reused for a few minutes: the comments fetch
+ * and every Ask Gemini question (sponsors, sentiment, its retry) need the same
+ * ~1 MB page, which otherwise got downloaded up to four times per video. The
+ * shared download isn't tied to any one caller's signal — an aborting caller
+ * just stops waiting for it.
+ */
+export function fetchWatchPageHtml(
   videoId: string,
   signal?: AbortSignal,
 ): Promise<string> {
+  let entry = watchPage;
+  if (
+    !entry ||
+    entry.videoId !== videoId ||
+    Date.now() - entry.fetchedAt > WATCH_PAGE_TTL_MS
+  ) {
+    const fresh = {
+      videoId,
+      fetchedAt: Date.now(),
+      html: downloadWatchPage(videoId),
+    };
+    // Never serve a failed download to the next caller.
+    fresh.html.catch(() => {
+      if (watchPage === fresh) watchPage = null;
+    });
+    watchPage = entry = fresh;
+  }
+  return untilAborted(entry.html, signal);
+}
+
+async function downloadWatchPage(videoId: string): Promise<string> {
   const res = await fetch(`${YT_ORIGIN}/watch?v=${videoId}`, {
     credentials: 'include',
-    signal,
   });
+  if (!res.ok) throw new Error(`watch page HTTP ${res.status}`);
   return res.text();
+}
+
+/** Settle with `promise`, or reject as soon as `signal` aborts. */
+function untilAborted<T>(
+  promise: Promise<T>,
+  signal?: AbortSignal,
+): Promise<T> {
+  if (!signal) return promise;
+  return new Promise<T>((resolve, reject) => {
+    const onAbort = (): void => reject(signal.reason);
+    if (signal.aborted) return onAbort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    promise
+      .then(resolve, reject)
+      .finally(() => signal.removeEventListener('abort', onAbort));
+  });
 }
 
 export function extractInnertubeContext(html: string): InnertubeContext | null {
