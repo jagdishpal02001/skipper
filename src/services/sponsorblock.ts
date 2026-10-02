@@ -4,7 +4,7 @@ import { sha256Hex } from '@/utils/hash';
 
 const log = createLogger('sponsorblock');
 
-const API = 'https://sponsor.ajay.app/apiWe/skipSegments';
+const API = 'https://sponsor.ajay.app/api/skipSegments';
 
 /**
  * SponsorBlock categories we consume, mapped onto Skipper's segment types.

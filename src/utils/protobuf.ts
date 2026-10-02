@@ -2,11 +2,16 @@
  * Minimal, loss-less protobuf passthrough codec, plus a helper that turns
  * YouTube's "open Ask panel" continuation into a "send a question" one.
  *
- * Both continuations are `{ field2:"PAyouchat", field3:<base64 inner> }`, where
- * the inner descriptor is `{f1:1, f2:videoId, f4:clickTracking, f5:{f4:1}}`.
- * The only difference is that the query continuation **drops the `f5` init
- * flag** — so stripping it (and re-sending with `formData.userInputText`)
- * reproduces exactly what the page does when you type a question.
+ * Both continuations are `{ field2:"PAyouchat", field3:<base64 inner> }`. The
+ * open one's inner descriptor is
+ * `{f1:1, f2:videoId, f4:clickTracking, f5:{f4:1}, f20:{f1:question}…}` — an
+ * init flag plus the suggested-question chips the panel shows. The query
+ * continuation the page sends when you type **keeps only `f1`, `f2` and `f4`**,
+ * so rebuilding the descriptor from just those (and re-sending with
+ * `formData.userInputText`) reproduces exactly what the page does. We keep a
+ * whitelist rather than stripping known extras: YouTube added the `f20` chips
+ * after we first stripped only `f5`, and questions sent with them still
+ * attached came back 400 INVALID_ARGUMENT.
  *
  * The codec only needs to preserve unknown fields byte-for-byte, which it does.
  */
@@ -21,6 +26,9 @@ interface PbField {
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
+
+/** Inner-descriptor fields a "send a question" continuation keeps. */
+const QUERY_DESCRIPTOR_FIELDS = new Set([1, 2, 4]);
 
 export function base64UrlToBytes(value: string): Uint8Array {
   let b64 = decodeURIComponent(value).replace(/-/g, '+').replace(/_/g, '/');
@@ -131,8 +139,9 @@ function encodeFields(fields: PbField[]): Uint8Array {
 
 /**
  * Convert an "open Ask panel" continuation into a "send a question" one by
- * stripping the inner init flag (field 5). Returns null if the continuation
- * doesn't have the expected PAyouchat shape (caller then falls back).
+ * keeping only the inner descriptor's query fields (dropping the init flag and
+ * suggested questions). Returns null if the continuation doesn't have the
+ * expected PAyouchat shape (caller then falls back).
  */
 export function deriveAskQueryContinuation(continuation: string): string | null {
   let fields: PbField[];
@@ -176,7 +185,9 @@ export function deriveAskQueryContinuation(continuation: string): string | null 
       } catch {
         continue;
       }
-      const filtered = descriptor.filter((d) => d.field !== 5);
+      const filtered = descriptor.filter((d) =>
+        QUERY_DESCRIPTOR_FIELDS.has(d.field),
+      );
       if (filtered.length !== descriptor.length) {
         g.payload = encodeFields(filtered);
         changed = true;

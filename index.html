@@ -1,0 +1,2384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skipper — Skip Sponsors, See AI Ratings & Track Your YouTube Time</title>
+    <meta name="description"
+        content="Skipper is a free, AI-powered YouTube companion: auto-skip sponsors, see an AI audience rating for every video from its comments, and track your watch time — all private, no API key.">
+    <meta property="og:title" content="Skipper — AI YouTube Companion">
+    <meta property="og:description"
+        content="Skip sponsors, see AI audience ratings from the comments, and track your YouTube time. Free, private, no API key.">
+    <meta property="og:type" content="website">
+    <!-- Modern Google Font: Inter & Plus Jakarta Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet">
+
+    <style>
+        /* CSS RESET & VARIABLES */
+        :root {
+            --bg-deep: #07090e;
+            --bg-surface-900: #0f1115;
+            --bg-surface-800: #171a21;
+            --bg-surface-700: #1f232c;
+            --bg-surface-600: #2a2f3a;
+
+            --brand-400: #4f9dff;
+            --brand-500: #2b82f6;
+            --brand-600: #1a6ae0;
+            --brand-700: #1657b4;
+
+            --gemini-cyan: #00f2fe;
+            --gemini-purple: #a855f7;
+
+            /* SponsorBlock Colors */
+            --color-sponsor: rgba(46, 204, 113, 0.65);
+            --color-sponsor-active: rgba(46, 204, 113, 0.95);
+            --color-self-promo: rgba(168, 85, 247, 0.65);
+            --color-self-promo-active: rgba(168, 85, 247, 0.95);
+            --color-intro: rgba(59, 130, 246, 0.65);
+            --color-intro-active: rgba(59, 130, 246, 0.95);
+            --color-outro: rgba(245, 158, 11, 0.65);
+            --color-outro-active: rgba(245, 158, 11, 0.95);
+
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+            --font-display: 'Plus Jakarta Sans', var(--font-sans);
+
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+
+            --border-glow: rgba(255, 255, 255, 0.05);
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            font-family: var(--font-sans);
+            background-color: var(--bg-deep);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        body {
+            position: relative;
+            line-height: 1.6;
+        }
+
+        /* CUSTOM SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-deep);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg-surface-700);
+            border-radius: 5px;
+            border: 2px solid var(--bg-deep);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--bg-surface-600);
+        }
+
+        /* BACKGROUND GLOW BLOBS */
+        .glowing-orbs-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(140px);
+            opacity: 0.12;
+            mix-blend-mode: screen;
+            animation: drift 25s infinite alternate ease-in-out;
+        }
+
+        .orb-1 {
+            top: 10%;
+            left: 15%;
+            width: 450px;
+            height: 450px;
+            background: var(--brand-500);
+            animation-duration: 20s;
+        }
+
+        .orb-2 {
+            top: 30%;
+            right: 10%;
+            width: 500px;
+            height: 500px;
+            background: var(--gemini-purple);
+            animation-duration: 25s;
+            animation-delay: -5s;
+        }
+
+        .orb-3 {
+            top: 60%;
+            left: -5%;
+            width: 400px;
+            height: 400px;
+            background: var(--brand-600);
+            animation-duration: 22s;
+        }
+
+        .orb-4 {
+            top: 80%;
+            right: 20%;
+            width: 480px;
+            height: 480px;
+            background: var(--gemini-cyan);
+            animation-duration: 28s;
+            animation-delay: -3s;
+        }
+
+        @keyframes drift {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            50% {
+                transform: translate(80px, 60px) scale(1.1);
+            }
+
+            100% {
+                transform: translate(-40px, -40px) scale(0.9);
+            }
+        }
+
+        /* GRID BACKGROUND */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+            mask-image: radial-gradient(ellipse at 50% 30%, black 60%, transparent 100%);
+            -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 60%, transparent 100%);
+        }
+
+        /* CONTAINERS & LAYOUT */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 10;
+        }
+
+        section {
+            padding: 100px 0;
+            position: relative;
+        }
+
+        /* GLASS CARD COMMON STYLE */
+        .glass-card {
+            background: rgba(15, 17, 21, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius-md);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        /* NAVIGATION BAR */
+        header.navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 100;
+            background: rgba(7, 9, 14, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            transition: var(--transition-smooth);
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .logo-box {
+            display: grid;
+            place-items: center;
+            width: 34px;
+            height: 34px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(43, 130, 246, 0.4);
+            animation: pulse-glow 3s infinite;
+        }
+
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 4px 15px rgba(43, 130, 246, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 4px 25px rgba(43, 130, 246, 0.7);
+            }
+        }
+
+        .logo-text {
+            font-family: var(--font-display);
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #fff;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: var(--transition-smooth);
+        }
+
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        .btn-nav-action {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition-smooth);
+        }
+
+        .btn-nav-action:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        /* HERO SECTION */
+        .hero {
+            padding-top: 170px;
+            padding-bottom: 80px;
+            text-align: center;
+        }
+
+        .badge-hero {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            border-radius: 50px;
+            background: rgba(43, 130, 246, 0.1);
+            border: 1px solid rgba(43, 130, 246, 0.2);
+            color: var(--brand-400);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin-bottom: 24px;
+            text-transform: uppercase;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge-spark {
+            color: var(--gemini-cyan);
+            animation: pulse-spark 1.5s infinite alternate;
+        }
+
+        @keyframes pulse-spark {
+            0% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 2px var(--gemini-cyan));
+            }
+
+            100% {
+                transform: scale(1.2);
+                filter: drop-shadow(0 0 6px var(--gemini-cyan));
+            }
+        }
+
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -1.5px;
+            max-width: 900px;
+            margin: 0 auto 24px auto;
+        }
+
+        .gradient-text-ai {
+            background: linear-gradient(135deg, #60a5fa, #c084fc, #22d3ee);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-size: 200% 200%;
+            animation: animate-grad 8s ease infinite;
+        }
+
+        @keyframes animate-grad {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .hero p.tagline {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto 40px auto;
+            font-weight: 400;
+        }
+
+        .hero-ctas {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .hero-launch-badge {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+
+        .hero-launch-badge a {
+            display: inline-block;
+            transition: var(--transition-smooth);
+            border-radius: var(--radius-sm);
+        }
+
+        .hero-launch-badge a:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.05);
+        }
+
+        .hero-launch-badge img {
+            display: block;
+            border-radius: var(--radius-sm);
+            max-width: 100%;
+            height: auto;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: var(--radius-md);
+            background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+            color: #fff;
+            font-weight: 700;
+            font-size: 1.05rem;
+            text-decoration: none;
+            box-shadow: 0 4px 20px rgba(43, 130, 246, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -60%;
+            width: 40px;
+            height: 200%;
+            background: rgba(255, 255, 255, 0.15);
+            transform: rotate(30deg);
+            transition: none;
+            pointer-events: none;
+            animation: shine 4s infinite linear;
+        }
+
+        @keyframes shine {
+            0% {
+                left: -60%;
+            }
+
+            15% {
+                left: 130%;
+            }
+
+            100% {
+                left: 130%;
+            }
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(43, 130, 246, 0.6);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 14px 28px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* INTERACTIVE VIDEO PLAYER DEMO */
+        .player-demo-container {
+            max-width: 800px;
+            margin: 0 auto;
+            position: relative;
+            border-radius: var(--radius-lg);
+            padding: 8px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .player-mockup {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: calc(var(--radius-lg) - 4px);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Mock Video Content Scene */
+        .video-scene {
+            flex: 1;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: linear-gradient(180deg, #101217 0%, #060709 100%);
+        }
+
+        /* Animated Video Frames Graphic */
+        .video-visuals {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            display: grid;
+            place-items: center;
+            opacity: 0.9;
+        }
+
+        .scene-graphic {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(43, 130, 246, 0.2) 0%, transparent 70%);
+            position: absolute;
+            transition: var(--transition-smooth);
+        }
+
+        .graphic-1 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.08) 0%, transparent 60%);
+            top: -20px;
+            left: 10%;
+        }
+
+        .graphic-2 {
+            width: 280px;
+            height: 280px;
+            background: radial-gradient(circle, rgba(46, 204, 113, 0.05) 0%, transparent 60%);
+            bottom: -50px;
+            right: 15%;
+        }
+
+        .scene-card {
+            padding: 24px;
+            border-radius: var(--radius-md);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            max-width: 400px;
+            text-align: center;
+            z-index: 2;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            transition: var(--transition-smooth);
+        }
+
+        .scene-card h3 {
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            font-family: var(--font-display);
+            color: #fff;
+        }
+
+        .scene-card p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .scene-card .scene-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-secondary);
+        }
+
+        /* Live Skip Toast Overlay */
+        .player-toast-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        .player-toast {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            background: rgba(15, 17, 21, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            transform: translateX(-150%);
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .player-toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        /* Live audience-rating badge (mirrors the in-player chip) */
+        .player-rating-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 30;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-radius: 20px;
+            background: rgba(15, 17, 21, 0.9);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #2ecc71;
+            backdrop-filter: blur(6px);
+        }
+
+        .player-rating-badge .star {
+            color: #2ecc71;
+        }
+
+        .player-rating-badge .denom {
+            opacity: 0.6;
+            font-weight: 400;
+            margin-left: 1px;
+        }
+
+        .toast-icon {
+            display: grid;
+            place-items: center;
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: var(--brand-500);
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        .toast-details h4 {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .toast-details p {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Mock Player Timeline UI */
+        .player-controls-overlay {
+            width: 100%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+            padding: 20px 20px 10px 20px;
+            z-index: 10;
+        }
+
+        .player-timeline-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: var(--transition-smooth);
+        }
+
+        .player-timeline-container:hover {
+            height: 10px;
+        }
+
+        .player-timeline-played {
+            height: 100%;
+            width: 0%;
+            background: #ff0000;
+            border-radius: 4px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 5;
+        }
+
+        .player-playhead {
+            width: 14px;
+            height: 14px;
+            background: #ff0000;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            left: 0%;
+            z-index: 6;
+            transition: transform 0.1s ease;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.8);
+        }
+
+        .player-timeline-container:hover .player-playhead {
+            transform: translate(-50%, -50%) scale(1.2);
+        }
+
+        /* Marked Segments Overlay */
+        .timeline-marker {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 2px;
+            z-index: 3;
+            transition: var(--transition-smooth);
+        }
+
+        .marker-intro {
+            left: 10%;
+            width: 15%;
+            background: var(--color-intro);
+        }
+
+        .marker-sponsor {
+            left: 40%;
+            width: 25%;
+            background: var(--color-sponsor);
+        }
+
+        .marker-self_promo {
+            left: 75%;
+            width: 15%;
+            background: var(--color-self-promo);
+        }
+
+        /* Marker active glow */
+        .timeline-marker.active-skipping {
+            box-shadow: 0 0 12px currentColor;
+            opacity: 1;
+        }
+
+        .timeline-marker.disabled {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .player-actions-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .player-left-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .player-btn-icon {
+            background: none;
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: var(--transition-smooth);
+        }
+
+        .player-btn-icon:hover {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .player-time-display {
+            font-size: 0.8rem;
+            color: #ccc;
+            font-weight: 500;
+        }
+
+        /* Toggles under Player */
+        .player-demo-toggles {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            margin-top: 24px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .toggle-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface-900);
+            border: 1px solid var(--border-glow);
+            min-width: 180px;
+            flex: 1;
+            transition: var(--transition-smooth);
+        }
+
+        .toggle-card:hover {
+            border-color: rgba(255, 255, 255, 0.1);
+            background: var(--bg-surface-800);
+        }
+
+        .toggle-card-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .toggle-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .toggle-dot.sponsor {
+            background: var(--color-sponsor-active);
+        }
+
+        .toggle-dot.self_promo {
+            background: var(--color-self-promo-active);
+        }
+
+        .toggle-dot.intro {
+            background: var(--color-intro-active);
+        }
+
+        .toggle-card-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        /* CUSTOM TOGGLE SWITCH */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 36px;
+            height: 20px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--bg-surface-600);
+            transition: .3s;
+            border-radius: 20px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 14px;
+            width: 14px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked+.slider {
+            background-color: var(--brand-500);
+        }
+
+        input:focus+.slider {
+            box-shadow: 0 0 1px var(--brand-500);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(16px);
+        }
+
+        /* FEATURES SECTION */
+        .section-header {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto 60px auto;
+        }
+
+        .section-header h2 {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin-bottom: 16px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            padding: 32px;
+            transition: var(--transition-smooth);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(43, 130, 246, 0.3);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(43, 130, 246, 0.05);
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, var(--brand-500), transparent);
+            opacity: 0;
+            transition: var(--transition-smooth);
+        }
+
+        .feature-card:hover::before {
+            opacity: 1;
+        }
+
+        .feature-icon-wrapper {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--brand-400);
+            transition: var(--transition-smooth);
+        }
+
+        .feature-card:hover .feature-icon-wrapper {
+            background: var(--brand-500);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(43, 130, 246, 0.4);
+            border-color: var(--brand-600);
+        }
+
+        .feature-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .feature-new {
+            font-size: 0.65rem;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 30px;
+            color: #22d3ee;
+            background: rgba(34, 211, 238, 0.12);
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        /* HOW IT WORKS (THE CASCADE) */
+        .cascade-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .cascade-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: relative;
+        }
+
+        /* Pipeline Connecting Line */
+        .cascade-flow::before {
+            content: '';
+            position: absolute;
+            top: 40px;
+            bottom: 40px;
+            left: 36px;
+            width: 2px;
+            background: linear-gradient(180deg, var(--brand-500) 0%, var(--gemini-purple) 100%);
+            z-index: 1;
+            opacity: 0.3;
+        }
+
+        .cascade-step {
+            display: flex;
+            gap: 24px;
+            position: relative;
+            z-index: 2;
+            transition: var(--transition-smooth);
+        }
+
+        .cascade-step:hover {
+            transform: translateX(8px);
+        }
+
+        .step-number {
+            display: grid;
+            place-items: center;
+            width: 74px;
+            height: 74px;
+            border-radius: 50%;
+            background: var(--bg-surface-900);
+            border: 2px solid var(--bg-surface-700);
+            color: var(--text-secondary);
+            font-weight: 800;
+            font-size: 1.3rem;
+            font-family: var(--font-display);
+            flex-shrink: 0;
+            transition: var(--transition-smooth);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .cascade-step:hover .step-number {
+            border-color: var(--brand-500);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(43, 130, 246, 0.3);
+        }
+
+        .cascade-step:nth-child(4):hover .step-number {
+            border-color: var(--gemini-purple);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        .step-content {
+            padding: 24px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .step-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .step-title h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .step-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-secondary);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .step-badge.fast {
+            background: rgba(46, 204, 113, 0.1);
+            color: #2ecc71;
+            border-color: rgba(46, 204, 113, 0.2);
+        }
+
+        .step-badge.ai {
+            background: rgba(168, 85, 247, 0.1);
+            color: #c084fc;
+            border-color: rgba(168, 85, 247, 0.2);
+        }
+
+        .step-description {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* FAQ SECTION */
+        .faq-wrapper {
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .faq-item {
+            border: 1px solid var(--border-glow);
+            border-radius: var(--radius-md);
+            background: rgba(15, 17, 21, 0.6);
+            overflow: hidden;
+            transition: var(--transition-smooth);
+        }
+
+        .faq-question {
+            width: 100%;
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: none;
+            border: none;
+            color: #fff;
+            text-align: left;
+            font-size: 1.05rem;
+            font-weight: 600;
+            font-family: var(--font-display);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .faq-icon-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease;
+            color: var(--text-secondary);
+        }
+
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, padding 0.3s ease-out;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            padding: 0 24px;
+            border-top: 1px solid transparent;
+        }
+
+        /* FAQ Active States */
+        .faq-item.active {
+            border-color: rgba(43, 130, 246, 0.2);
+            background: rgba(15, 17, 21, 0.8);
+        }
+
+        .faq-item.active .faq-icon-arrow {
+            transform: rotate(180deg);
+            color: var(--brand-400);
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 400px;
+            /* generous cap so longer answers don't clip */
+            padding-bottom: 24px;
+            border-color: rgba(255, 255, 255, 0.04);
+        }
+
+        /* ABOUT DEVELOPER & LINKS */
+        .developer-section {
+            padding-bottom: 120px;
+        }
+
+        .dev-card-container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .dev-card {
+            padding: 40px;
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dev-avatar-wrapper {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .dev-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(255, 255, 255, 0.06);
+            background: linear-gradient(135deg, var(--bg-surface-700), var(--bg-surface-600));
+            display: grid;
+            place-items: center;
+            font-size: 2.2rem;
+            color: var(--brand-400);
+            font-weight: 800;
+        }
+
+        .dev-avatar-glow {
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--brand-500), var(--gemini-purple));
+            z-index: -1;
+            opacity: 0.4;
+            filter: blur(8px);
+        }
+
+        .dev-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .dev-title {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: var(--brand-400);
+        }
+
+        .dev-name {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.2;
+        }
+
+        .dev-bio {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        .dev-socials {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-top: 4px;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-decoration: none;
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition-smooth);
+        }
+
+        .social-link:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .social-link.linkedin-btn:hover {
+            background: rgba(10, 102, 194, 0.15);
+            border-color: rgba(10, 102, 194, 0.4);
+            color: #0a66c2;
+        }
+
+        /* BOTTOM CTA SECTION */
+        .bottom-cta {
+            position: relative;
+            padding: 100px 0;
+            text-align: center;
+        }
+
+        .bottom-cta-card {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 60px 40px;
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-lg);
+        }
+
+        .bottom-cta-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(43, 130, 246, 0.15), transparent 60%);
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .bottom-cta h2 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 800;
+            letter-spacing: -1px;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .bottom-cta p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 600px;
+            margin: 0 auto 32px auto;
+            position: relative;
+            z-index: 2;
+        }
+
+        .bottom-cta-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+            padding: 40px 0;
+            background: #040508;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .footer-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .footer-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 24px;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: var(--transition-smooth);
+        }
+
+        .footer-link:hover {
+            color: var(--text-secondary);
+        }
+
+        /* RESPONSIVE STYLES */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                /* simple responsive approach: hide mid links */
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero p.tagline {
+                font-size: 1.1rem;
+            }
+
+            .hero-ctas,
+            .bottom-cta-buttons {
+                flex-direction: column;
+                width: 100%;
+                max-width: 320px;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .dev-card {
+                flex-direction: column;
+                text-align: center;
+                padding: 30px 20px;
+            }
+
+            .dev-socials {
+                justify-content: center;
+            }
+
+            .cascade-step {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .cascade-flow::before {
+                left: 20px;
+                top: 20px;
+                bottom: 20px;
+            }
+
+            .step-number {
+                width: 44px;
+                height: 44px;
+                font-size: 1rem;
+            }
+
+            .step-content {
+                padding: 16px;
+            }
+
+            .section-header h2 {
+                font-size: 1.8rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- BACKGROUND EFFECTS -->
+    <div class="glowing-orbs-container">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+        <div class="orb orb-4"></div>
+    </div>
+    <div class="grid-overlay"></div>
+
+    <!-- HEADER / NAVIGATION -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="#" class="logo">
+                <div class="logo-box">S</div>
+                <span class="logo-text">Skipper</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#how-it-works" class="nav-link">How it Works</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+                <a href="#developer" class="nav-link">Developer</a>
+            </nav>
+            <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
+                class="btn-nav-action">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path
+                        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                    </path>
+                </svg>
+                <span>View Code</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+        <div class="container">
+            <div class="badge-hero">
+                <span class="badge-spark">✦</span> AI-Powered YouTube Companion
+            </div>
+            <h1>
+                Skip Sponsors, See the Real Ratings, <br>
+                <span class="gradient-text-ai">Own Your Watch Time</span>
+            </h1>
+            <p class="tagline">
+                Skipper auto-skips sponsors, shows an AI audience rating for every video distilled from its comments,
+                and gives you a private dashboard of your YouTube time. Free, fast, zero API keys.
+            </p>
+
+            <div class="hero-ctas">
+                <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob"
+                    target="_blank" rel="noopener noreferrer" class="btn-primary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+                    </svg>
+                    <span>Install Skipper Extension</span>
+                </a>
+                <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
+                    class="btn-secondary">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                        </path>
+                    </svg>
+                    <span>View Repository</span>
+                </a>
+            </div>
+
+            <div class="hero-launch-badge">
+                <a href="https://launchbison.com" target="_blank" rel="noopener">
+                    <img src="https://launchbison.com/badge-light.png" alt="Featured on Launchbison" width="198"
+                        height="62" />
+                </a>
+                <a href="https://www.producthunt.com/products/skipper-ai-youtube-sponsor-skip?embed=true&amp;utm_source=badge-featured&amp;utm_medium=badge&amp;utm_campaign=badge-skipper-ai-youtube-sponsor-skip"
+                    target="_blank" rel="noopener noreferrer">
+                    <img alt="Skipper AI — YouTube Sponsor Skip - Skip YT sponsor segments with YouTube's built-in Gemini AI | Product Hunt"
+                        width="250" height="54"
+                        src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1260949&amp;theme=light&amp;t=1790339445471" />
+                </a>
+                <a href="https://launchnest.io/p/skipper-ai" target="_blank" rel="noopener">
+                    <img src="https://launchnest.io/badge/skipper-ai.svg?variant=featured"
+                        alt="Skipper AI on LaunchNest" width="220" height="56" />
+                </a>
+            </div>
+
+            <!-- INTERACTIVE VIDEO PLAYER DEMO -->
+            <div class="player-demo-container">
+                <div class="player-mockup">
+
+                    <!-- Floating Skipper Alert Overlay inside player -->
+                    <div class="player-toast-container">
+                        <div class="player-toast" id="skip-toast">
+                            <div class="toast-icon">⚡</div>
+                            <div class="toast-details">
+                                <h4 id="toast-title">Skipped Sponsor</h4>
+                                <p id="toast-time">Saved 25 seconds</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Audience rating badge (AI, from comments) -->
+                    <div class="player-rating-badge" title="AI audience rating from top comments">
+                        <span class="star">✦</span>
+                        <span>8.4<span class="denom">/10</span></span>
+                    </div>
+
+                    <!-- Video content simulation -->
+                    <div class="video-scene">
+                        <div class="video-visuals">
+                            <div class="scene-graphic graphic-1"></div>
+                            <div class="scene-graphic graphic-2"></div>
+                        </div>
+                        <div class="scene-card">
+                            <h3 id="video-topic">Loading Video...</h3>
+                            <p id="video-detail">Playhead tracking sponsor markers</p>
+                            <span class="scene-badge" id="video-badge">Content</span>
+                        </div>
+                    </div>
+
+                    <!-- Controls and Timeline overlays -->
+                    <div class="player-controls-overlay">
+                        <div class="player-timeline-container" id="player-timeline">
+                            <!-- Played progress -->
+                            <div class="player-timeline-played" id="timeline-played"></div>
+                            <div class="player-playhead" id="timeline-playhead"></div>
+
+                            <!-- Highlighted markers -->
+                            <div class="timeline-marker marker-intro" id="marker-intro"></div>
+                            <div class="timeline-marker marker-sponsor" id="marker-sponsor"></div>
+                            <div class="timeline-marker marker-self_promo" id="marker-self_promo"></div>
+                        </div>
+
+                        <!-- Left buttons (Play, Volume, Time) -->
+                        <div class="player-actions-row">
+                            <div class="player-left-actions">
+                                <button class="player-btn-icon" id="play-pause-btn">
+                                    <!-- Pause Icon (standard playing state) -->
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="play-icon">
+                                        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>
+                                    </svg>
+                                </button>
+                                <button class="player-btn-icon">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
+                                </button>
+                                <div class="player-time-display">
+                                    <span id="current-time">0:00</span> / <span id="total-time">2:00</span>
+                                </div>
+                            </div>
+                            <div class="player-btn-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z">
+                                    </path>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom switches under player to control mockup rules -->
+                <div class="player-demo-toggles">
+                    <div class="toggle-card">
+                        <div class="toggle-card-info">
+                            <span class="toggle-dot intro"></span>
+                            <span class="toggle-card-label">Skip Intros</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-intro">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-card">
+                        <div class="toggle-card-info">
+                            <span class="toggle-dot sponsor"></span>
+                            <span class="toggle-card-label">Skip Sponsors</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-sponsor" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-card">
+                        <div class="toggle-card-info">
+                            <span class="toggle-dot self_promo"></span>
+                            <span class="toggle-card-label">Skip Self-Promo</span>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="toggle-self_promo" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES Grid -->
+    <section id="features" class="glass-card"
+        style="border-radius: 0; background: rgba(10, 11, 15, 0.4); border-left: none; border-right: none;">
+        <div class="container">
+            <div class="section-header">
+                <h2>Supercharged Features</h2>
+                <p>Everything you need to watch YouTube smarter — skip the filler, know what viewers think, and
+                    understand your own habits.</p>
+            </div>
+
+            <div class="features-grid">
+                <!-- NEW Feature: AI Audience Ratings -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon
+                                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                            </polygon>
+                        </svg>
+                    </div>
+                    <h3>AI Audience Ratings <span class="feature-new">New</span></h3>
+                    <p>A <strong>✦ x/10</strong> badge next to the like button tells you what viewers really think — an
+                        AI verdict distilled from the top comments and weighted by likes. It reads stance toward the
+                        video, not just tone, so angry-but-supportive comments count correctly.</p>
+                </div>
+                <!-- NEW Feature: Usage Dashboard -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 3v18h18"></path>
+                            <rect x="7" y="12" width="3" height="6"></rect>
+                            <rect x="12" y="8" width="3" height="10"></rect>
+                            <rect x="17" y="4" width="3" height="14"></rect>
+                        </svg>
+                    </div>
+                    <h3>Private Time Dashboard <span class="feature-new">New</span></h3>
+                    <p>See total time saved, hours spent on YouTube, your top channels, watching-vs-browsing split, and
+                        Shorts time. Every stat is computed and stored <strong>only on your device</strong> — nothing is
+                        ever uploaded.</p>
+                </div>
+                <!-- Feature 1 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                        </svg>
+                    </div>
+                    <h3>Multi-Provider Database</h3>
+                    <p>Queries SponsorBlock's database containing millions of community-submitted timestamps. Works
+                        instantly for popular uploads with zero logins.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                    </div>
+                    <h3>On-Demand Gemini AI</h3>
+                    <p>Fills the gaps when community databases don't cover a video. Prompts YouTube's built-in Gemini
+                        model to analyze transcripts, comments, and descriptions.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3>Shared Supabase Cache</h3>
+                    <p>Once Gemini analyzes a video for you, timestamps are automatically synchronized to a shared
+                        database. All Skipper users benefit instantly.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <line x1="9" y1="3" x2="9" y2="21"></line>
+                        </svg>
+                    </div>
+                    <h3>Timeline Markers</h3>
+                    <p>Colors YouTube's native timeline overlay with segments, indicating where Sponsors,
+                        Self-Promotions, Intros, and Outros reside in the playback bar.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        </svg>
+                    </div>
+                    <h3>Privacy Preserving</h3>
+                    <p>Lookups use privacy-preserving hash-prefix requests. The video ID you are watching is never fully
+                        shared. No private tracking or browsing logs stored.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="feature-card glass-card">
+                    <div class="feature-icon-wrapper">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                    </div>
+                    <h3>Granular Control</h3>
+                    <p>You decide what to skip. Customize settings to automatically skip or simply outline Intros,
+                        Outros, Self-Promotional pitches, or Sponsor segments.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS (THE CASCADE) -->
+    <section id="how-it-works">
+        <div class="container">
+            <div class="section-header">
+                <h2>How Skipper Works</h2>
+                <p>Skipper leverages a high-speed, cascading retrieval strategy to skip sponsors seamlessly.</p>
+            </div>
+
+            <div class="cascade-wrapper">
+                <div class="cascade-flow">
+                    <!-- Step 1 -->
+                    <div class="cascade-step">
+                        <div class="step-number">01</div>
+                        <div class="step-content glass-card">
+                            <div class="step-title">
+                                <h3>Local Cache Check</h3>
+                                <span class="step-badge fast">Instant (~1ms)</span>
+                            </div>
+                            <p class="step-description">As soon as the page loads, Skipper checks chrome.storage.local
+                                to see if the video has been recently skipping-enabled or processed by your local
+                                system.</p>
+                        </div>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="cascade-step">
+                        <div class="step-number">02</div>
+                        <div class="step-content glass-card">
+                            <div class="step-title">
+                                <h3>Shared Database (Supabase)</h3>
+                                <span class="step-badge fast">Fast (~50ms)</span>
+                            </div>
+                            <p class="step-description">If not locally cached, Skipper checks the shared Supabase public
+                                database to see if another Skipper user has already had this video analyzed. If found,
+                                skipping is active immediately.</p>
+                        </div>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="cascade-step">
+                        <div class="step-number">03</div>
+                        <div class="step-content glass-card">
+                            <div class="step-title">
+                                <h3>SponsorBlock Community Lookup</h3>
+                                <span class="step-badge fast">Fast (~100ms)</span>
+                            </div>
+                            <p class="step-description">Skipper queries the SponsorBlock crowd-sourced database,
+                                searching for segment records for the video via privacy-preserving SHA-256 prefixes.</p>
+                        </div>
+                    </div>
+                    <!-- Step 4 -->
+                    <div class="cascade-step">
+                        <div class="step-number">04</div>
+                        <div class="step-content glass-card" style="border-color: rgba(168, 85, 247, 0.2);">
+                            <div class="step-title">
+                                <h3>On-Demand Gemini AI Analysis</h3>
+                                <span class="step-badge ai">AI Fallback (~3s)</span>
+                            </div>
+                            <p class="step-description">If the video is a fresh upload and isn't indexed anywhere yet,
+                                Skipper drives YouTube's built-in "Ask about this video" Gemini feature in the
+                                background to automatically identify sponsor segments, caching the result locally and
+                                pushing it to Supabase.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ SECTION -->
+    <section id="faq" class="glass-card"
+        style="border-radius: 0; background: rgba(10, 11, 15, 0.4); border-left: none; border-right: none;">
+        <div class="container">
+            <div class="section-header">
+                <h2>Frequently Asked Questions</h2>
+                <p>Have questions about Skipper? Find explanations to the most common queries below.</p>
+            </div>
+
+            <div class="faq-wrapper">
+                <!-- Q1 -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How does the Gemini AI analysis work?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>When a video lacks pre-existing sponsor records, Skipper extracts the video metadata,
+                            auto-generated transcripts, descriptions, or chapters. It then communicates with YouTube's
+                            native "Ask about this video" AI feature (available for logged-in accounts) to evaluate the
+                            transcripts and output precise sponsor start and end timestamps.</p>
+                    </div>
+                </div>
+                <!-- Q: Ratings -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>How does the AI audience rating work?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Skipper reads the video's top comments (with their like counts) and asks YouTube's built-in
+                            Gemini to judge how the audience received the video — weighting each comment by its likes,
+                            so popular opinions count for more. The result is a 0–10 score plus a positive/negative
+                            breakdown, shown as a badge next to the like button. Ratings are cached and shared (keyed by
+                            a one-way hash of the video ID) so most videos load a rating instantly. You can turn the
+                            badge off in settings.</p>
+                    </div>
+                </div>
+                <!-- Q: Dashboard privacy -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is my watch-time data private?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Completely. The time dashboard (time saved, watch/browse/Shorts time, top channels) is
+                            calculated and stored <strong>only in your own browser</strong> using
+                            <code>chrome.storage.local</code>. None of it is ever uploaded, associated with an account,
+                            or shared — and you can wipe it any time with the dashboard's "Reset stats" button.
+                        </p>
+                    </div>
+                </div>
+                <!-- Q2 -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Do I need to sign up for a Gemini API key?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>No! Skipper is free and operates completely out of the box without requiring any API keys. It
+                            utilizes your existing browser context to query SponsorBlock and YouTube's built-in AI panel
+                            directly.</p>
+                    </div>
+                </div>
+                <!-- Q3 -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is my privacy protected?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes. We value privacy. For SponsorBlock queries, Skipper sends only the first 4 characters of
+                            the SHA-256 hash of the video ID, meaning the full identity of the video you watch is never
+                            shared. The extension stores no user-identifying telemetry or history, only timestamps of
+                            identified sponsors.</p>
+                    </div>
+                </div>
+                <!-- Q4 -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>What browsers are supported?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Skipper is built as a standard Manifest V3 extension, meaning it is compatible with Google
+                            Chrome, Brave, Microsoft Edge, Opera, and any other Chromium-based browser.</p>
+                    </div>
+                </div>
+                <!-- Q5 -->
+                <div class="faq-item">
+                    <button class="faq-question">
+                        <span>Is Skipper open source?</span>
+                        <span class="faq-icon-arrow">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="6 9 12 15 18 9"></polyline>
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Absolutely. Skipper is fully open source and published under the MIT License. You can check
+                            out the entire codebase, build it locally, or contribute directly on GitHub.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- DEVELOPER SECTION -->
+    <section id="developer" class="developer-section">
+        <div class="container">
+            <div class="dev-card-container">
+                <div class="glass-card dev-card">
+                    <div class="dev-avatar-wrapper">
+                        <div class="dev-avatar-glow"></div>
+                        <div class="dev-avatar">JP</div>
+                    </div>
+                    <div class="dev-info">
+                        <span class="dev-title">Creator & Maintainer</span>
+                        <h2 class="dev-name">Jagdish Pal</h2>
+                        <p class="dev-bio">
+                            I am a software engineer focused on developing intuitive tools, browser utilities, and
+                            open-source applications. I built Skipper to combine modern Gemini AI models with
+                            community-driven databases, providing the ultimate distraction-free YouTube experience.
+                        </p>
+                        <div class="dev-socials">
+                            <a href="https://www.linkedin.com/in/jagdishpal02000/" target="_blank"
+                                rel="noopener noreferrer" class="social-link linkedin-btn">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z" />
+                                </svg>
+                                <span>LinkedIn</span>
+                            </a>
+                            <a href="https://github.com/jagdishpal02001" target="_blank" rel="noopener noreferrer"
+                                class="social-link">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.07 2.91.83.1-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z" />
+                                </svg>
+                                <span>GitHub</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- BOTTOM CTA -->
+    <section class="bottom-cta">
+        <div class="container">
+            <div class="glass-card bottom-cta-card">
+                <h2>Ready to Skip the Noise?</h2>
+                <p>Install Skipper AI directly from the Chrome Web Store and start enjoying a clean YouTube experience
+                    today.</p>
+                <div class="bottom-cta-buttons">
+                    <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob"
+                        target="_blank" rel="noopener noreferrer" class="btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+                        </svg>
+                        <span>Install Extension</span>
+                    </a>
+                    <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
+                        class="btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path
+                                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22">
+                            </path>
+                        </svg>
+                        <span>GitHub Repository</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container footer-content">
+            <a href="#" class="footer-logo">
+                <span>Skipper AI</span>
+            </a>
+            <div>
+                © 2026 Jagdish Pal. Released under the MIT License.
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
+                    class="footer-link">GitHub</a>
+                <a href="https://www.linkedin.com/in/jagdishpal02000/" target="_blank" rel="noopener noreferrer"
+                    class="footer-link">LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- INTERACTIVE DEMO JAVASCRIPT & FAQ ACCORDION -->
+    <script>
+        // FAQ Accordion logic
+        const faqQuestions = document.querySelectorAll('.faq-question');
+        faqQuestions.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const item = btn.parentElement;
+                const isActive = item.classList.contains('active');
+
+                // Close all FAQ items
+                document.querySelectorAll('.faq-item').forEach(faqItem => {
+                    faqItem.classList.remove('active');
+                });
+
+                // Toggle active if it wasn't active
+                if (!isActive) {
+                    item.classList.add('active');
+                }
+            });
+        });
+
+        // Interactive Video Player Simulator
+        const videoSegments = {
+            // [startPct, endPct, label, skipMessage, colorName, subtitleText]
+            intro: [10, 25, 'Intro Segment', 'Skipping intro theme', 'intro', 'Introduction to the Project'],
+            sponsor: [40, 65, 'Sponsored Segment', 'Skipping sponsor message', 'sponsor', 'Thanking Our Sponsor: VPN Safe'],
+            self_promo: [75, 90, 'Self-Promotion', 'Skipping merch pitch', 'self_promo', 'Check out the links down below!']
+        };
+
+        const config = {
+            skip_intro: false,
+            skip_sponsor: true,
+            skip_self_promo: true
+        };
+
+        // DOM elements
+        const timeline = document.getElementById('player-timeline');
+        const timelinePlayed = document.getElementById('timeline-played');
+        const timelinePlayhead = document.getElementById('timeline-playhead');
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        const playIcon = document.getElementById('play-icon');
+        const currentTimeEl = document.getElementById('current-time');
+
+        const videoTopicEl = document.getElementById('video-topic');
+        const videoDetailEl = document.getElementById('video-detail');
+        const videoBadgeEl = document.getElementById('video-badge');
+
+        const skipToast = document.getElementById('skip-toast');
+        const toastTitle = document.getElementById('toast-title');
+        const toastTime = document.getElementById('toast-time');
+
+        // Toggle elements
+        const toggleIntro = document.getElementById('toggle-intro');
+        const toggleSponsor = document.getElementById('toggle-sponsor');
+        const toggleSelfPromo = document.getElementById('toggle-self_promo');
+
+        const markerIntro = document.getElementById('marker-intro');
+        const markerSponsor = document.getElementById('marker-sponsor');
+        const markerSelfPromo = document.getElementById('marker-self_promo');
+
+        // State variables
+        let playPercent = 0;
+        let isPlaying = true;
+        let animationFrameId = null;
+        let toastTimeout = null;
+        let lastTimeUpdate = 0;
+
+        // Synchronize switch controls and timeline overlays
+        function updateTogglesState() {
+            config.skip_intro = toggleIntro.checked;
+            config.skip_sponsor = toggleSponsor.checked;
+            config.skip_self_promo = toggleSelfPromo.checked;
+
+            // Update UI class for disabled/enabled markers
+            markerIntro.className = `timeline-marker marker-intro ${config.skip_intro ? '' : 'disabled'}`;
+            markerSponsor.className = `timeline-marker marker-sponsor ${config.skip_sponsor ? '' : 'disabled'}`;
+            markerSelfPromo.className = `timeline-marker marker-self_promo ${config.skip_self_promo ? '' : 'disabled'}`;
+        }
+
+        toggleIntro.addEventListener('change', updateTogglesState);
+        toggleSponsor.addEventListener('change', updateTogglesState);
+        toggleSelfPromo.addEventListener('change', updateTogglesState);
+        updateTogglesState();
+
+        // Pause/play toggling
+        playPauseBtn.addEventListener('click', () => {
+            isPlaying = !isPlaying;
+            if (isPlaying) {
+                playIcon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path>';
+                runSimulation();
+            } else {
+                playIcon.innerHTML = '<path d="M8 5v14l11-7z"></path>';
+                cancelAnimationFrame(animationFrameId);
+            }
+        });
+
+        // Toast trigger helper
+        function triggerSkipToast(title, durationStr) {
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+                skipToast.classList.remove('show');
+            }
+
+            toastTitle.textContent = title;
+            toastTime.textContent = `Automatically skipped ${durationStr}`;
+
+            // Reflow hack
+            void skipToast.offsetWidth;
+
+            skipToast.classList.add('show');
+
+            toastTimeout = setTimeout(() => {
+                skipToast.classList.remove('show');
+            }, 2500);
+        }
+
+        // Format percentage to mock minutes
+        function formatPercentToTime(pct) {
+            const totalSeconds = 150; // 2:30 total
+            const currentSeconds = Math.floor((pct / 100) * totalSeconds);
+            const m = Math.floor(currentSeconds / 60);
+            const s = currentSeconds % 60;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        // The simulation loop
+        function simulatePlayback() {
+            if (!isPlaying) return;
+
+            // Increment progress
+            playPercent += 0.15;
+
+            if (playPercent >= 100) {
+                playPercent = 0;
+            }
+
+            // Check if playhead hits skip regions
+            let checkSkipping = true;
+
+            // Intro Skip Check
+            if (config.skip_intro && playPercent >= videoSegments.intro[0] && playPercent < videoSegments.intro[1]) {
+                playPercent = videoSegments.intro[1];
+                triggerSkipToast("Skipped Intro", "22 seconds");
+                // Flash marker active
+                markerIntro.classList.add('active-skipping');
+                setTimeout(() => markerIntro.classList.remove('active-skipping'), 800);
+            }
+            // Sponsor Skip Check
+            else if (config.skip_sponsor && playPercent >= videoSegments.sponsor[0] && playPercent < videoSegments.sponsor[1]) {
+                playPercent = videoSegments.sponsor[1];
+                triggerSkipToast("Skipped Sponsor", "38 seconds");
+                // Flash marker active
+                markerSponsor.classList.add('active-skipping');
+                setTimeout(() => markerSponsor.classList.remove('active-skipping'), 800);
+            }
+            // Self-promo Skip Check
+            else if (config.skip_self_promo && playPercent >= videoSegments.self_promo[0] && playPercent < videoSegments.self_promo[1]) {
+                playPercent = videoSegments.self_promo[1];
+                triggerSkipToast("Skipped Self-Promo", "23 seconds");
+                // Flash marker active
+                markerSelfPromo.classList.add('active-skipping');
+                setTimeout(() => markerSelfPromo.classList.remove('active-skipping'), 800);
+            }
+
+            // Update Timeline position in DOM
+            timelinePlayed.style.width = `${playPercent}%`;
+            timelinePlayhead.style.left = `${playPercent}%`;
+
+            // Update Time Counter text
+            currentTimeEl.textContent = formatPercentToTime(playPercent);
+
+            // Update Scene visual details based on playPercent
+            updateSceneDetails(playPercent);
+
+            animationFrameId = requestAnimationFrame(simulatePlayback);
+        }
+
+        function updateSceneDetails(pct) {
+            // Determine active scene
+            if (pct >= videoSegments.intro[0] && pct < videoSegments.intro[1]) {
+                // If intro is disabled, playhead is inside it
+                videoTopicEl.textContent = videoSegments.intro[5];
+                videoDetailEl.textContent = "Intro Sequence playing...";
+                videoBadgeEl.textContent = "Intro";
+                videoBadgeEl.style.background = "var(--color-intro)";
+                videoBadgeEl.style.color = "#fff";
+            }
+            else if (pct >= videoSegments.sponsor[0] && pct < videoSegments.sponsor[1]) {
+                // If sponsor is disabled, playhead is inside it
+                videoTopicEl.textContent = videoSegments.sponsor[5];
+                videoDetailEl.textContent = "Sponsor Advertisement running...";
+                videoBadgeEl.textContent = "Sponsor Pitch";
+                videoBadgeEl.style.background = "var(--color-sponsor)";
+                videoBadgeEl.style.color = "#fff";
+            }
+            else if (pct >= videoSegments.self_promo[0] && pct < videoSegments.self_promo[1]) {
+                // If self-promo is disabled, playhead is inside it
+                videoTopicEl.textContent = videoSegments.self_promo[5];
+                videoDetailEl.textContent = "Self-Promotional segment playing...";
+                videoBadgeEl.textContent = "Self-Promo";
+                videoBadgeEl.style.background = "var(--color-self-promo)";
+                videoBadgeEl.style.color = "#fff";
+            }
+            else {
+                // Content sections
+                videoBadgeEl.textContent = "Main Content";
+                videoBadgeEl.style.background = "rgba(255, 255, 255, 0.08)";
+                videoBadgeEl.style.color = "var(--text-secondary)";
+
+                if (pct < videoSegments.intro[0]) {
+                    videoTopicEl.textContent = "Building high-performance UI components";
+                    videoDetailEl.textContent = "Setting up local dev tools and loaders";
+                } else if (pct < videoSegments.sponsor[0]) {
+                    videoTopicEl.textContent = "Implementing standard CSS pipelines";
+                    videoDetailEl.textContent = "Optimizing style sheets & custom selectors";
+                } else if (pct < videoSegments.self_promo[0]) {
+                    videoTopicEl.textContent = "Configuring responsive breakpoints";
+                    videoDetailEl.textContent = "Handling multi-device grids and margins";
+                } else {
+                    videoTopicEl.textContent = "Summary & Key Takeaways";
+                    videoDetailEl.textContent = "Reviewing code structures and next steps";
+                }
+            }
+        }
+
+        function runSimulation() {
+            animationFrameId = requestAnimationFrame(simulatePlayback);
+        }
+
+        // Initialize simulation
+        runSimulation();
+
+        // Make timeline clickable to jump in video mockup
+        timeline.addEventListener('click', (e) => {
+            const rect = timeline.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = (clickX / rect.width) * 100;
+            playPercent = Math.max(0, Math.min(percentage, 100));
+
+            timelinePlayed.style.width = `${playPercent}%`;
+            timelinePlayhead.style.left = `${playPercent}%`;
+            currentTimeEl.textContent = formatPercentToTime(playPercent);
+            updateSceneDetails(playPercent);
+        });
+
+    </script>
+</body>
+
+</html>

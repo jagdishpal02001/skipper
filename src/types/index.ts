@@ -6,3 +6,4 @@ export * from './messages';
 export * from './errorLog';
 export * from './usage';
 export * from './sentiment';
+export * from './growth';

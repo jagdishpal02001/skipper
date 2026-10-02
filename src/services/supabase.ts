@@ -1,4 +1,5 @@
 import type { SponsorSegment, VideoSentiment } from '@/types';
+import { CATEGORY_FOR_TYPE } from '@/types';
 import { createLogger } from '@/utils/logger';
 import { sha256Hex } from '@/utils/hash';
 
@@ -16,6 +17,10 @@ const SENTIMENT_REST_URL = `${cleanUrl}/rest/v1/${SENTIMENT_TABLE}`;
 
 /** Shared verdicts older than this are ignored — comments drift over time. */
 const SENTIMENT_MAX_AGE_DAYS = 14;
+/** A shared row that would skip more than this share of a video is ignored. */
+const MAX_SKIP_FRACTION = 0.5;
+/** Longest summary the DB accepts (scripts/shared-tables-hardening.sql). */
+const MAX_SUMMARY_CHARS = 600;
 
 const headers = (): Record<string, string> => ({
   apikey: SUPABASE_ANON_KEY,
@@ -65,12 +70,59 @@ export async function supabaseLookup(
       return null;
     }
 
-    log.info('hit', videoId, `${row.segments.length} segments`);
-    return row.segments;
+    const segments = sanitizeSegments(row.segments, duration);
+    if (!segments) {
+      log.warn('ignoring implausible shared row', videoId);
+      return null;
+    }
+    log.info('hit', videoId, `${segments.length} segments`);
+    return segments;
   } catch (error) {
     log.warn('lookup failed (network)', error);
     return null;
   }
+}
+
+/**
+ * Any client holding the public anon key can write rows, so shared segments
+ * are untrusted input: keep only well-formed segments that fit inside the
+ * video, and drop the whole row if it would skip most of it (a poisoned row
+ * shouldn't be able to skip entire videos for every user).
+ */
+function sanitizeSegments(
+  raw: unknown,
+  duration: number,
+): SponsorSegment[] | null {
+  if (!Array.isArray(raw)) return null;
+  const segments: SponsorSegment[] = [];
+  for (const item of raw as unknown[]) {
+    if (!item || typeof item !== 'object') continue;
+    const { start, end, type, confidence, source } = item as Record<
+      string,
+      unknown
+    >;
+    if (
+      typeof start !== 'number' ||
+      typeof end !== 'number' ||
+      !(start >= 0 && end > start && end <= duration + 1) ||
+      typeof type !== 'string' ||
+      !Object.prototype.hasOwnProperty.call(CATEGORY_FOR_TYPE, type)
+    ) {
+      continue;
+    }
+    segments.push({
+      start,
+      end,
+      type: type as SponsorSegment['type'],
+      confidence:
+        typeof confidence === 'number' && Number.isFinite(confidence)
+          ? confidence
+          : 0.9,
+      source: typeof source === 'string' ? source : undefined,
+    });
+  }
+  const skipped = segments.reduce((sum, s) => sum + (s.end - s.start), 0);
+  return skipped > duration * MAX_SKIP_FRACTION ? null : segments;
 }
 
 /**
@@ -190,7 +242,7 @@ export async function supabaseSentimentStore(
       positive_pct: sentiment.positivePct,
       negative_pct: sentiment.negativePct,
       neutral_pct: sentiment.neutralPct,
-      summary: sentiment.summary,
+      summary: sentiment.summary.slice(0, MAX_SUMMARY_CHARS),
       sample_size: sentiment.sampleSize,
       created_at: new Date(sentiment.createdAt).toISOString(),
     };

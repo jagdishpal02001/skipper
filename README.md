@@ -2,12 +2,12 @@
 🔗 **[Official Website](https://skipperai.netlify.app/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
 
 [![Website](https://img.shields.io/badge/Website-skipperai.netlify.app-success)](https://skipperai.netlify.app/)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.1.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.2.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
 
 
 Skipper is an AI-enhanced YouTube viewing assistant. It **skips sponsored segments**, shows an **AI audience rating** for each video (distilled from its top comments), and gives you a **private dashboard** of how you spend time on YouTube. Sponsor detection combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
 
-> Open a video → Skipper checks the local cache & Supabase public database → SponsorBlock community database → Falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
+> Open a video → Skipper checks its local cache → the SponsorBlock community database and Skipper's shared database (in parallel) → falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
 
 ---
 
@@ -16,9 +16,11 @@ Skipper is an AI-enhanced YouTube viewing assistant. It **skips sponsored segmen
 - 🆓 **Free, no API key** — Uses the public **SponsorBlock** database plus YouTube's built-in **"Ask about this video"** Gemini feature (for logged-in accounts that have it) to get sponsor timestamps directly.
 - 🌍 **Reliable out of the box** — SponsorBlock covers millions of videos and works without any Google sign-in, so skipping works immediately.
 - 🤖 **On-demand AI analysis** — Gemini fills the gaps for videos not yet in the community database — no manual submissions required.
-- 🎬 **Works on any video** — Transcript, captions, chapters, description, or comments are used as the analysis source.
+- 🎬 **Works on any video** — Transcript, captions, chapters, description, or comments are used as the analysis source. (Shorts are left alone.)
 - ⏭️ **Automatic skipping** — Jumps past sponsors, self-promos, intros, and outros.
-- 🔔 **Skip alerts** — Non-intrusive notifications each time a segment is skipped.
+- 🔔 **Skip alerts** — Non-intrusive notifications each time a segment is skipped, with one-click Undo.
+- 🔢 **Toolbar badge** — Pin Skipper and its icon shows how many sponsors it found in the video you're watching.
+- 💌 **Share with friends** — Share Skipper — with your own time-saved stats — to WhatsApp, X, Telegram, Facebook, Reddit or email from the popup or dashboard.
 - 💬 **AI audience ratings** — A `✦ x/10` badge next to the like/dislike buttons summarizes what viewers think, distilled from the top comments (like-weighted) via YouTube's Gemini. Click it for a positive/negative breakdown and a short summary.
 - 📊 **Private time dashboard** — See total time saved, total time on YouTube, your top channels by watch time, browsing-vs-watching split, and Shorts time. All stored **locally** — nothing leaves your device.
 - 🧠 **Hybrid cache** — Uses a 30-day local cache (`chrome.storage.local`) combined with a shared public database (Supabase) so once any video is analyzed, all other Skipper users skip it (and see its rating) instantly.
@@ -83,14 +85,14 @@ YouTube video loaded
    ▼
 [content] ContentController ── Runs the analysis cascade:
    │
-   ├── 1. Local Cache check ◀─┐
-   │                          │
-   ├── 2. Supabase DB check ◀─┤
-   │                          ├── (via background message worker)
-   ├── 3. SponsorBlock DB ◀───┤
-   │                          │
-   ├── 4. AskGeminiProvider ──┼── AskGeminiApi (same-origin InnerTube API call)
-   │                          └── AskGeminiPanel (DOM interaction fallback driver)
+   ├── 1. Local Cache check ◀─────┐
+   │                              │
+   ├── 2. SponsorBlock DB ◀───────┤ (via background message worker)
+   │      + Supabase DB, in       │
+   │        parallel ◀────────────┤
+   │                              │
+   ├── 3. AskGeminiProvider ──────┼── AskGeminiApi (same-origin InnerTube API call)
+   │      (signed-in users)       └── AskGeminiPanel (DOM interaction fallback driver)
    │
    ▼ (segments handed to the skip engine)
 [content] SponsorSkipEngine ── Monitors playback, skips active segments,

@@ -18,9 +18,10 @@ export default defineConfig({
     rollupOptions: {
       input: {
         // Popup HTML entry is registered through the manifest action; the
-        // dashboard is a standalone extension page opened via chrome.tabs.create,
-        // so it must be registered as its own build input.
+        // dashboard and welcome pages are standalone extension pages opened
+        // via chrome.tabs.create, so each must be registered as a build input.
         dashboard: resolve(__dirname, 'src/dashboard/index.html'),
+        welcome: resolve(__dirname, 'src/welcome/index.html'),
       },
     },
   },

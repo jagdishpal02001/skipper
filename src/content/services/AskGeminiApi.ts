@@ -48,7 +48,8 @@ export class AskGeminiApi implements AskGeminiDriver {
     const headers = innertubeHeaders(authorization, context);
 
     // Turn the page's "open panel" continuation into a "send question" one by
-    // stripping its init flag — exactly what YouTube does when you type.
+    // dropping its open-only fields (init flag, suggested questions) — the
+    // same continuation YouTube sends when you type.
     const queryContinuation = deriveAskQueryContinuation(openContinuation);
     if (!queryContinuation) {
       throw new Error('could not derive query continuation');

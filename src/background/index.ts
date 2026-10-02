@@ -9,6 +9,7 @@ import {
   errorLogRepository,
   usageStats,
   sentimentCache,
+  growthRepository,
 } from '@/storage';
 import {
   supabaseLookup,
@@ -25,8 +26,8 @@ const log = createLogger('background');
  * settings management, error logging, and Supabase segment DB.
  * Content scripts and the popup talk to it exclusively through typed messages.
  */
-chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendResponse) => {
-  handle(message)
+chrome.runtime.onMessage.addListener((message: BackgroundRequest, sender, sendResponse) => {
+  handle(message, sender)
     .then(sendResponse)
     .catch((error: unknown) => {
       log.error('handler error', message.type, error);
@@ -38,6 +39,7 @@ chrome.runtime.onMessage.addListener((message: BackgroundRequest, _sender, sendR
 
 async function handle(
   message: BackgroundRequest,
+  sender: chrome.runtime.MessageSender,
 ): Promise<BackgroundResponseMap[BackgroundRequest['type']]> {
   switch (message.type) {
     case 'SAVE_RESULT': {
@@ -113,7 +115,15 @@ async function handle(
 
     case 'RECORD_USAGE': {
       await usageStats.addDelta(message.delta);
-      return { ok: true };
+      // Only skips move "time saved", so only they can reach a milestone.
+      let milestone: number | null = null;
+      if (message.delta.timeSavedSeconds) {
+        const { allTime } = await usageStats.summary(0);
+        if (await growthRepository.claimMilestone(allTime.timeSavedSeconds)) {
+          milestone = allTime.timeSavedSeconds;
+        }
+      }
+      return { ok: true, milestone };
     }
 
     case 'GET_USAGE_STATS': {
@@ -143,6 +153,33 @@ async function handle(
       return { ok: true };
     }
 
+    case 'GET_GROWTH': {
+      return { ok: true, growth: await growthRepository.get() };
+    }
+
+    case 'UPDATE_GROWTH': {
+      const growth = await growthRepository.update(message.patch);
+      return { ok: true, growth };
+    }
+
+    case 'SET_BADGE': {
+      const tabId = sender.tab?.id;
+      if (tabId !== undefined) {
+        const text = message.count > 0 ? String(message.count) : '';
+        await chrome.action.setBadgeBackgroundColor({ tabId, color: '#2b82f6' });
+        await chrome.action.setBadgeText({ tabId, text });
+      }
+      return { ok: true };
+    }
+
+    case 'OPEN_DASHBOARD': {
+      const hash = message.section ? `#${message.section}` : '';
+      await chrome.tabs.create({
+        url: chrome.runtime.getURL(`src/dashboard/index.html${hash}`),
+      });
+      return { ok: true };
+    }
+
     default: {
       const _never: never = message;
       throw new Error(`Unknown message: ${JSON.stringify(_never)}`);
@@ -155,10 +192,16 @@ function errorMessage(error: unknown): string {
 }
 
 // Housekeeping: prune expired cache entries + old usage buckets on start/install.
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener(({ reason }) => {
   void segmentCache.pruneExpired().then((n) => n && log.info(`pruned ${n} expired`));
   void usageStats.pruneOld();
   void sentimentCache.pruneExpired();
+  // First install only: a short welcome page (pinning, what signing in adds).
+  if (reason === chrome.runtime.OnInstalledReason.INSTALL) {
+    void chrome.tabs.create({
+      url: chrome.runtime.getURL('src/welcome/index.html'),
+    });
+  }
 });
 chrome.runtime.onStartup.addListener(() => {
   void segmentCache.pruneExpired();
