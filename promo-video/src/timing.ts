@@ -13,7 +13,14 @@ export const HEIGHT = timing.height;
 export const BEAT = 60 / BPM;
 export const BAR = BEAT * 4;
 
-export type SectionId = (typeof timing.sections)[number]['id'];
+export type SectionId =
+  | 'intro'
+  | 'skip'
+  | 'cascade'
+  | 'ratings'
+  | 'dashboard'
+  | 'benefits'
+  | 'cta';
 
 export interface Section {
   id: SectionId;
