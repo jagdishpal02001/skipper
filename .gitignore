@@ -47,3 +47,6 @@ Thumbs.db
 # ESLint & Prettier Cache
 .eslintcache
 .prettiercache
+
+
+/promo-video
