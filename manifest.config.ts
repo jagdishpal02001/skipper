@@ -7,6 +7,7 @@ export default defineManifest({
   version: pkg.version,
   description:
     'Skip YouTube sponsors, see AI audience ratings from the comments, and track your watch time — private, no API key needed.',
+  homepage_url: 'https://skipperai.octas.solutions/',
   icons: {
     16: 'public/icons/icon-16.png',
     32: 'public/icons/icon-32.png',

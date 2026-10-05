@@ -1,7 +1,7 @@
 # Skipper AI — YouTube Sponsor Skipper with Ask Gemini + SponsorBlock
-🔗 **[Official Website](https://skipperai.netlify.app/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
+🔗 **[Official Website](https://skipperai.octas.solutions/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
 
-[![Website](https://img.shields.io/badge/Website-skipperai.netlify.app-success)](https://skipperai.netlify.app/)
+[![Website](https://img.shields.io/badge/Website-skipperai.octas.solutions-success)](https://skipperai.octas.solutions/)
 [![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.2.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
 
 
