@@ -4,15 +4,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skipper — Skip Sponsors, See AI Ratings & Track Your YouTube Time</title>
-    <meta name="description"
-        content="Skipper is a free, AI-powered YouTube companion: auto-skip sponsors, see an AI audience rating for every video from its comments, and track your watch time — all private, no API key.">
-    <meta property="og:title" content="Skipper — AI YouTube Companion">
-    <meta property="og:description"
-        content="Skip sponsors, see AI audience ratings from the comments, and track your YouTube time. Free, private, no API key.">
+    <title>Skipper AI | Free YouTube Sponsor Skipper</title>
+    <meta name="description" content="Skip YouTube sponsor reads with SponsorBlock and optional AI. Free, open source, no API key. Undo skips and track time saved on your device.">
+    <link rel="canonical" href="https://skipperai.octas.solutions/">
+    <meta property="og:title" content="Skipper AI — Free YouTube Sponsor Skipper">
+    <meta property="og:description" content="Skip YouTube sponsor reads with SponsorBlock and optional AI. Free, open source, no API key. Undo skips and track time saved on your device.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://skipperai.octas.solutions/">
-    <link rel="canonical" href="https://skipperai.octas.solutions/">
+    <meta property="og:image" content="https://skipperai.octas.solutions/social-preview.png">
+    <meta property="og:image:width" content="1280">
+    <meta property="og:image:height" content="640">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:alt" content="Skipper AI — Skip YouTube sponsor reads. Free and open source, with SponsorBlock and optional YouTube AI.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Skipper AI — Free YouTube Sponsor Skipper">
+    <meta name="twitter:description" content="Skip YouTube sponsor reads with SponsorBlock and optional AI. Free, open source, no API key. Undo skips and track time saved on your device.">
+    <meta name="twitter:image" content="https://skipperai.octas.solutions/social-preview.png">
+    <meta name="twitter:image:alt" content="Skipper AI — Skip YouTube sponsor reads. Free and open source.">
+    <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Skipper AI",
+  "description": "Skip YouTube sponsor reads with SponsorBlock and optional AI. Free, open source, no API key. Undo skips and track time saved on your device.",
+  "url": "https://skipperai.octas.solutions/",
+  "downloadUrl": "https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob",
+  "applicationCategory": "BrowserApplication",
+  "operatingSystem": "Desktop browsers supporting Chrome extensions",
+  "isAccessibleForFree": true,
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "sameAs": [
+    "https://github.com/jagdishpal02001/skipper",
+    "https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob"
+  ]
+}
+    </script>
     <!-- Modern Google Font: Inter & Plus Jakarta Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1214,6 +1244,11 @@
         }
 
         /* FAQ Active States */
+        .faq-answer a {
+            color: var(--brand-400);
+            text-underline-offset: 3px;
+        }
+
         .faq-item.active {
             border-color: rgba(43, 130, 246, 0.2);
             background: rgba(15, 17, 21, 0.8);
@@ -1430,6 +1465,8 @@
 
         .footer-links {
             display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
             gap: 24px;
         }
 
@@ -1553,25 +1590,26 @@
     <section class="hero">
         <div class="container">
             <div class="badge-hero">
-                <span class="badge-spark">✦</span> AI-Powered YouTube Companion
+                <span class="badge-spark">✦</span> Free &amp; Open-Source YouTube Extension
             </div>
             <h1>
-                Skip Sponsors, See the Real Ratings, <br>
-                <span class="gradient-text-ai">Own Your Watch Time</span>
+                Skip YouTube sponsor reads. <br>
+                <span class="gradient-text-ai">Keep watching.</span>
             </h1>
             <p class="tagline">
-                Skipper auto-skips sponsors, shows an AI audience rating for every video distilled from its comments,
-                and gives you a private dashboard of your YouTube time. Free, fast, zero API keys.
+                Automatic sponsor skipping with SponsorBlock community timestamps and optional YouTube AI
+                for uncovered videos. Free, open source, and no separate API key needed.
+                AI availability depends on your account, region, language, and video.
             </p>
 
             <div class="hero-ctas">
-                <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob"
+                <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob?utm_source=website&amp;utm_medium=referral&amp;utm_campaign=always_on"
                     target="_blank" rel="noopener noreferrer" class="btn-primary">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
                         stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
                     </svg>
-                    <span>Install Skipper Extension</span>
+                    <span>Add to Chrome — free</span>
                 </a>
                 <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
                     class="btn-secondary">
@@ -1741,9 +1779,9 @@
                         </svg>
                     </div>
                     <h3>AI Audience Ratings <span class="feature-new">New</span></h3>
-                    <p>A <strong>✦ x/10</strong> badge next to the like button tells you what viewers really think — an
-                        AI verdict distilled from the top comments and weighted by likes. It reads stance toward the
-                        video, not just tone, so angry-but-supportive comments count correctly.</p>
+                    <p>An optional <strong>✦ x/10</strong> badge summarizes a sample of public top comments,
+                        weighted by likes. Open it for a sentiment breakdown and short AI summary.
+                        Ratings reflect sampled comments, may be imperfect, and depend on YouTube AI availability.</p>
                 </div>
                 <!-- NEW Feature: Usage Dashboard -->
                 <div class="feature-card glass-card">
@@ -1769,9 +1807,9 @@
                             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
                         </svg>
                     </div>
-                    <h3>Multi-Provider Database</h3>
-                    <p>Queries SponsorBlock's database containing millions of community-submitted timestamps. Works
-                        instantly for popular uploads with zero logins.</p>
+                    <h3>Community Sponsor Timestamps</h3>
+                    <p>Uses SponsorBlock's community-contributed timestamps to skip supported sponsor reads.
+                        Core community skipping needs no sign-in when segment data is available.</p>
                 </div>
                 <!-- Feature 2 -->
                 <div class="feature-card glass-card">
@@ -1782,8 +1820,8 @@
                         </svg>
                     </div>
                     <h3>On-Demand Gemini AI</h3>
-                    <p>Fills the gaps when community databases don't cover a video. Prompts YouTube's built-in Gemini
-                        model to analyze transcripts, comments, and descriptions.</p>
+                    <p>For uncovered videos, Skipper can ask YouTube's built-in AI for sponsor timestamps.
+                        This requires an eligible signed-in account and a supported region, language, and video.</p>
                 </div>
                 <!-- Feature 3 -->
                 <div class="feature-card glass-card">
@@ -1794,9 +1832,9 @@
                             </path>
                         </svg>
                     </div>
-                    <h3>Shared Supabase Cache</h3>
-                    <p>Once Gemini analyzes a video for you, timestamps are automatically synchronized to a shared
-                        database. All Skipper users benefit instantly.</p>
+                    <h3>Reuse Shared Results</h3>
+                    <p>Previously analyzed timestamps and derived audience ratings can be reused by other Skipper
+                        users, so a shared result can load without another AI request.</p>
                 </div>
                 <!-- Feature 4 -->
                 <div class="feature-card glass-card">
@@ -1820,8 +1858,8 @@
                         </svg>
                     </div>
                     <h3>Privacy Preserving</h3>
-                    <p>Lookups use privacy-preserving hash-prefix requests. The video ID you are watching is never fully
-                        shared. No private tracking or browsing logs stored.</p>
+                    <p>Your watch-time statistics and diagnostic logs stay on your device. Remote segment lookups use
+                        hashed video identifiers. Optional AI requests are processed by YouTube.</p>
                 </div>
                 <!-- Feature 6 -->
                 <div class="feature-card glass-card">
@@ -1833,8 +1871,8 @@
                         </svg>
                     </div>
                     <h3>Granular Control</h3>
-                    <p>You decide what to skip. Customize settings to automatically skip or simply outline Intros,
-                        Outros, Self-Promotional pitches, or Sponsor segments.</p>
+                    <p>Choose which categories to skip: sponsors, self-promotion, intros, and outros.
+                        A skip notification offers Undo whenever you want to watch the segment.</p>
                 </div>
             </div>
         </div>
@@ -1845,7 +1883,7 @@
         <div class="container">
             <div class="section-header">
                 <h2>How Skipper Works</h2>
-                <p>Skipper leverages a high-speed, cascading retrieval strategy to skip sponsors seamlessly.</p>
+                <p>Existing results first, community coverage next, and optional AI when available.</p>
             </div>
 
             <div class="cascade-wrapper">
@@ -1855,12 +1893,11 @@
                         <div class="step-number">01</div>
                         <div class="step-content glass-card">
                             <div class="step-title">
-                                <h3>Local Cache Check</h3>
-                                <span class="step-badge fast">Instant (~1ms)</span>
+                                <h3>Check Saved Results</h3>
+                                <span class="step-badge fast">On your device</span>
                             </div>
-                            <p class="step-description">As soon as the page loads, Skipper checks chrome.storage.local
-                                to see if the video has been recently skipping-enabled or processed by your local
-                                system.</p>
+                            <p class="step-description">When you open a video, Skipper checks for a result already
+                                saved in your browser, so repeat visits can reuse existing timestamps.</p>
                         </div>
                     </div>
                     <!-- Step 2 -->
@@ -1868,12 +1905,11 @@
                         <div class="step-number">02</div>
                         <div class="step-content glass-card">
                             <div class="step-title">
-                                <h3>Shared Database (Supabase)</h3>
-                                <span class="step-badge fast">Fast (~50ms)</span>
+                                <h3>Look Up Community Coverage</h3>
+                                <span class="step-badge fast">Community + shared data</span>
                             </div>
-                            <p class="step-description">If not locally cached, Skipper checks the shared Supabase public
-                                database to see if another Skipper user has already had this video analyzed. If found,
-                                skipping is active immediately.</p>
+                            <p class="step-description">Skipper checks SponsorBlock and shared Skipper results in
+                                parallel. Available community timestamps take priority over shared AI results.</p>
                         </div>
                     </div>
                     <!-- Step 3 -->
@@ -1881,11 +1917,11 @@
                         <div class="step-number">03</div>
                         <div class="step-content glass-card">
                             <div class="step-title">
-                                <h3>SponsorBlock Community Lookup</h3>
-                                <span class="step-badge fast">Fast (~100ms)</span>
+                                <h3>Try Optional YouTube AI</h3>
+                                <span class="step-badge fast">When available</span>
                             </div>
-                            <p class="step-description">Skipper queries the SponsorBlock crowd-sourced database,
-                                searching for segment records for the video via privacy-preserving SHA-256 prefixes.</p>
+                            <p class="step-description">If no timestamps are available, Skipper can ask YouTube's
+                                built-in AI to identify sponsor segments. Eligibility and timestamp accuracy vary.</p>
                         </div>
                     </div>
                     <!-- Step 4 -->
@@ -1893,13 +1929,11 @@
                         <div class="step-number">04</div>
                         <div class="step-content glass-card" style="border-color: rgba(168, 85, 247, 0.2);">
                             <div class="step-title">
-                                <h3>On-Demand Gemini AI Analysis</h3>
-                                <span class="step-badge ai">AI Fallback (~3s)</span>
+                                <h3>Skip with Undo</h3>
+                                <span class="step-badge ai">Your controls</span>
                             </div>
-                            <p class="step-description">If the video is a fresh upload and isn't indexed anywhere yet,
-                                Skipper drives YouTube's built-in "Ask about this video" Gemini feature in the
-                                background to automatically identify sponsor segments, caching the result locally and
-                                pushing it to Supabase.</p>
+                            <p class="step-description">Detected segments are marked on the timeline and skipped
+                                according to your category settings. Use Undo to watch a skipped segment.</p>
                         </div>
                     </div>
                 </div>
@@ -1929,10 +1963,10 @@
                         </span>
                     </button>
                     <div class="faq-answer">
-                        <p>When a video lacks pre-existing sponsor records, Skipper extracts the video metadata,
-                            auto-generated transcripts, descriptions, or chapters. It then communicates with YouTube's
-                            native "Ask about this video" AI feature (available for logged-in accounts) to evaluate the
-                            transcripts and output precise sponsor start and end timestamps.</p>
+                        <p>When existing results are unavailable, Skipper can ask YouTube's built-in
+                            "Ask about this video" feature for sponsor timestamps. You need an eligible signed-in
+                            YouTube account, a supported region and language, and a video offering the feature.
+                            Signing in alone does not guarantee access. AI timestamps may be imperfect.</p>
                     </div>
                 </div>
                 <!-- Q: Ratings -->
@@ -1947,12 +1981,10 @@
                         </span>
                     </button>
                     <div class="faq-answer">
-                        <p>Skipper reads the video's top comments (with their like counts) and asks YouTube's built-in
-                            Gemini to judge how the audience received the video — weighting each comment by its likes,
-                            so popular opinions count for more. The result is a 0–10 score plus a positive/negative
-                            breakdown, shown as a badge next to the like button. Ratings are cached and shared (keyed by
-                            a one-way hash of the video ID) so most videos load a rating instantly. You can turn the
-                            badge off in settings.</p>
+                        <p>Skipper asks YouTube's built-in AI to summarize a sample of the video's public top
+                            comments, weighted by likes. The result is a 0–10 score, sentiment breakdown, and summary.
+                            It reflects sampled comments and may be imperfect. Derived results can be cached and
+                            shared using hashed video identifiers. You can turn off the badge in settings.</p>
                     </div>
                 </div>
                 <!-- Q: Dashboard privacy -->
@@ -2003,10 +2035,12 @@
                         </span>
                     </button>
                     <div class="faq-answer">
-                        <p>Yes. We value privacy. For SponsorBlock queries, Skipper sends only the first 4 characters of
-                            the SHA-256 hash of the video ID, meaning the full identity of the video you watch is never
-                            shared. The extension stores no user-identifying telemetry or history, only timestamps of
-                            identified sponsors.</p>
+                        <p>Watch-time statistics, cached video metadata, and diagnostic logs are stored locally.
+                            Settings use Chrome sync. SponsorBlock receives a hash prefix of the video ID; the shared
+                            cache uses full hashed identifiers for timestamps and derived ratings. Optional AI
+                            requests and sampled public comments are processed by YouTube. Skipper sends no usage
+                            telemetry. See the <a href="https://github.com/jagdishpal02001/skipper#privacy"
+                                target="_blank" rel="noopener noreferrer">extension privacy details</a>.</p>
                     </div>
                 </div>
                 <!-- Q4 -->
@@ -2094,13 +2128,13 @@
                 <p>Install Skipper AI directly from the Chrome Web Store and start enjoying a clean YouTube experience
                     today.</p>
                 <div class="bottom-cta-buttons">
-                    <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob"
+                    <a href="https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob?utm_source=website&amp;utm_medium=referral&amp;utm_campaign=always_on"
                         target="_blank" rel="noopener noreferrer" class="btn-primary">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
                         </svg>
-                        <span>Install Extension</span>
+                        <span>Add to Chrome — free</span>
                     </a>
                     <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
                         class="btn-secondary">
@@ -2127,6 +2161,8 @@
                 © 2026 Jagdish Pal. Released under the MIT License.
             </div>
             <div class="footer-links">
+                <a href="https://github.com/jagdishpal02001/skipper/issues" target="_blank" rel="noopener noreferrer" class="footer-link">Support</a>
+                <a href="https://github.com/jagdishpal02001/skipper#privacy" target="_blank" rel="noopener noreferrer" class="footer-link">Extension privacy</a>
                 <a href="https://github.com/jagdishpal02001/skipper" target="_blank" rel="noopener noreferrer"
                     class="footer-link">GitHub</a>
                 <a href="https://www.linkedin.com/in/jagdishpal02000/" target="_blank" rel="noopener noreferrer"
