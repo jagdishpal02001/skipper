@@ -1,11 +1,17 @@
 # Skipper AI — YouTube Sponsor Skipper with Ask Gemini + SponsorBlock
-🔗 **[Official Website](https://skipperai.octas.solutions/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**
+🔗 **[Official Website](https://skipperai.octas.solutions/)** | 🛍️ **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob?utm_source=github&utm_medium=referral&utm_campaign=opensource_discovery)**
 
 [![Website](https://img.shields.io/badge/Website-skipperai.octas.solutions-success)](https://skipperai.octas.solutions/)
-[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.2.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-v1.2.0-blue?logo=google-chrome&logoColor=white)](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob?utm_source=github&utm_medium=referral&utm_campaign=opensource_discovery)
 
 
-Skipper is an AI-enhanced YouTube viewing assistant. It **skips sponsored segments**, shows an **AI audience rating** for each video (distilled from its top comments), and gives you a **private dashboard** of how you spend time on YouTube. Sponsor detection combines the crowd-sourced **[SponsorBlock](https://sponsor.ajay.app/)** community database — which covers millions of videos and needs no sign-in — with on-demand **Gemini AI** analysis for videos the community hasn't covered yet (including ones uploaded minutes ago).
+Skipper AI is a **free, open-source YouTube sponsor skipper**. It uses **[SponsorBlock](https://sponsor.ajay.app/)** community timestamps, with **optional YouTube AI** for uncovered videos, including fresh uploads when the feature is available. Undo any skip, choose your skip categories, and review time-saved statistics stored on your device.
+
+Core community skipping works without sign-in when segment data is available. AI analysis and comment ratings require an eligible signed-in YouTube account, a supported region and language, and a video offering YouTube's built-in AI feature. Availability and accuracy vary.
+
+**Get started:** install from the Chrome Web Store, reload any YouTube tabs already open, and pin Skipper. Open a supported video; available sponsor segments are skipped automatically.
+
+[Watch the demo](https://www.youtube.com/watch?v=TazPcc1m93o) · [Report a problem](https://github.com/jagdishpal02001/skipper/issues)
 
 > Open a video → Skipper checks its local cache → the SponsorBlock community database and Skipper's shared database (in parallel) → falls back to analyzing via YouTube's built-in Gemini → Skipper skips sponsored segments and shows an alert.
 
@@ -14,16 +20,16 @@ Skipper is an AI-enhanced YouTube viewing assistant. It **skips sponsored segmen
 ## Features
 
 - 🆓 **Free, no API key** — Uses the public **SponsorBlock** database plus YouTube's built-in **"Ask about this video"** Gemini feature (for logged-in accounts that have it) to get sponsor timestamps directly.
-- 🌍 **Reliable out of the box** — SponsorBlock covers millions of videos and works without any Google sign-in, so skipping works immediately.
-- 🤖 **On-demand AI analysis** — Gemini fills the gaps for videos not yet in the community database — no manual submissions required.
-- 🎬 **Works on any video** — Transcript, captions, chapters, description, or comments are used as the analysis source. (Shorts are left alone.)
+- 🌍 **Community coverage without sign-in** — SponsorBlock provides timestamps for covered videos without requiring a Google account.
+- 🤖 **Optional AI analysis** — YouTube’s built-in AI can help identify sponsors on uncovered videos when your account and video support it.
+- 🎬 **Desktop YouTube watch pages** — Skipping depends on available segment data or eligible YouTube AI. Shorts and livestreams are excluded.
 - ⏭️ **Automatic skipping** — Jumps past sponsors, self-promos, intros, and outros.
 - 🔔 **Skip alerts** — Non-intrusive notifications each time a segment is skipped, with one-click Undo.
 - 🔢 **Toolbar badge** — Pin Skipper and its icon shows how many sponsors it found in the video you're watching.
 - 💌 **Share with friends** — Share Skipper — with your own time-saved stats — to WhatsApp, X, Telegram, Facebook, Reddit or email from the popup or dashboard.
 - 💬 **AI audience ratings** — A `✦ x/10` badge next to the like/dislike buttons summarizes what viewers think, distilled from the top comments (like-weighted) via YouTube's Gemini. Click it for a positive/negative breakdown and a short summary.
 - 📊 **Private time dashboard** — See total time saved, total time on YouTube, your top channels by watch time, browsing-vs-watching split, and Shorts time. All stored **locally** — nothing leaves your device.
-- 🧠 **Hybrid cache** — Uses a 30-day local cache (`chrome.storage.local`) combined with a shared public database (Supabase) so once any video is analyzed, all other Skipper users skip it (and see its rating) instantly.
+- 🧠 **Hybrid cache** — Local results and a shared public cache (Supabase) reduce repeat lookups and AI requests. Available timestamps and derived ratings can be reused by other Skipper users.
 - 🎚️ **Granular control** — Per-category toggles for sponsors, self-promo, intros, and outros, plus a toggle for the rating badge.
 
 ---
@@ -38,7 +44,7 @@ Manifest V3 · TypeScript (strict) · React 18 · Vite · TailwindCSS · Chrome 
 
 ### 1. Install from Chrome Web Store (Recommended)
 
-You can install Skipper AI directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob)**.
+You can install Skipper AI directly from the **[Chrome Web Store](https://chromewebstore.google.com/detail/skipper-ai-%E2%80%94-youtube-spon/ncchpipphiigdfbpbjofbhbahcgckaob?utm_source=github&utm_medium=referral&utm_campaign=opensource_discovery)**.
 
 ### 2. Manual Installation & Build (For Developers)
 
@@ -77,10 +83,6 @@ YouTube video loaded
    │
    ▼
 [content] YouTubeData ──────── Extracts watch page metadata and caption tracks
-   │
-   ▼
-[content] TranscriptService ── Cascades through: manual captions → auto captions →
-   │                           chapters → description → comments to assemble source text
    │
    ▼
 [content] ContentController ── Runs the analysis cascade:
@@ -129,7 +131,7 @@ src/
 
 ## Key Architecture Patterns
 
-- **Cascading Providers.** The extension utilizes a fallback cascade. It checks the local cache first, then queries the public databases (Supabase, then SponsorBlock). If all miss, it analyzes the video via the `AskGeminiProvider` using YouTube's built-in Gemini feature and stores the result back to the caches.
+- **Cascading Providers.** The extension utilizes a fallback cascade. It checks the local cache first, then queries SponsorBlock and the shared Supabase database in parallel, preferring community timestamps. If all miss, it analyzes the video via the `AskGeminiProvider` using YouTube's built-in Gemini feature and stores the result back to the caches.
 - **Repository Pattern.** Storage wrappers (`SegmentCacheRepository`, `SettingsRepository`) decouple the application logic from the raw Chrome storage APIs, keeping code mockable and clean.
 - **Shadow DOM Isolation.** In-player toast overlays are mounted in an isolated Shadow DOM so YouTube's styles cannot interfere with the extension's rendering.
 - **Efficient Event Loops.** Skipping reads the native HTML5 `<video>` element directly. We query `currentTime` in a lightweight periodic loop, auto-cleaning resources on navigation or tab unload.
@@ -153,11 +155,11 @@ src/
 
 ## Privacy
 
-- Video transcripts and metadata are parsed same-origin and analyzed through YouTube's built-in Gemini feature. No developer API keys are used or stored.
+- Optional AI requests and sampled public comments are processed by YouTube's built-in AI feature. No separate AI API key is required.
 - SponsorBlock lookups use the privacy-preserving hash-prefix endpoint: only the first four characters of a video ID's SHA-256 hash are sent.
-- The shared Supabase cache is keyed by the **full SHA-256 hash** of the video ID, so the raw ID of the video you are watching is never transmitted.
-- Successful analysis results (sponsor start and end timestamps) are stored in the shared public Supabase database so all Skipper users can benefit from them. No persistent identifier, account info, or watch history is collected, and no usage telemetry is sent.
-- **Audience ratings.** Comments are read same-origin and scored via YouTube's Gemini. Only the derived verdict (a 0–10 rating, positive/negative/neutral percentages, and a one-line summary) is cached — keyed by the **SHA-256 hash** of the video ID, never the raw ID, comments, or any user identifier — and shared through the same public Supabase database so ratings load instantly for everyone.
+- Requests to the shared Supabase cache use the **full SHA-256 hash** of the video ID rather than its raw ID. Hashing is not a guarantee of anonymity.
+- Successful analysis results (sponsor start and end timestamps) are stored in the shared public Supabase database so all Skipper users can benefit from them. Skipper sends no usage telemetry. Local video caches and diagnostic logs may contain video IDs, titles, and channels; settings use Chrome sync.
+- **Audience ratings.** Sampled public comments are processed by YouTube's built-in AI. The shared Supabase cache stores the derived rating, sentiment percentages, sample size, and summary under a **SHA-256 hash** of the video ID. Local rating caches also retain the video ID. Shared results do not include the raw comments.
 - **Usage dashboard.** Time-tracking statistics (time saved, watch/browse/Shorts time, top channels) are computed and stored **only in `chrome.storage.local` on your own device**. They are never transmitted anywhere, are never associated with an account, and can be cleared any time from the dashboard.
 
 ---

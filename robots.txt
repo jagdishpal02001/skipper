@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://skipperai.octas.solutions/sitemap.xml
